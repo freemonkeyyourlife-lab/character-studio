@@ -102,6 +102,11 @@ export default function Home() {
 
   const selectedProvider = imageProviders.find((item) => item.id === provider) || imageProviders[0];
 
+  useEffect(() => {
+    const firstModel = selectedProvider.models.find((item) => reference ? item.capabilities.includes("image-edit") : item.capabilities.includes("text-to-image"));
+    if (firstModel && !selectedProvider.models.some((item) => item.id === model)) setModel(firstModel.id);
+  }, [selectedProvider, reference, model]);
+
   const prompt = useMemo(
     () => [
       "photorealistic portrait",

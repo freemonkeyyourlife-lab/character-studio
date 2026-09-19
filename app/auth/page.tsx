@@ -1,6 +1,6 @@
  "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function AuthPage() {
@@ -25,12 +25,12 @@ export default function AuthPage() {
     setBusy(false);
   };
 
-  useState(() => {
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const value = params.get("error");
     if (value === "confirmation") setNotice("The confirmation link is invalid or has expired. Request a new confirmation email.");
     if (value === "configuration") setNotice("Cloud authentication is not configured yet.");
-  });
+  }, []);
 
   return (
     <main className="shell">

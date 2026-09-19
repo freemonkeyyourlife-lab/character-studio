@@ -71,7 +71,6 @@ export async function POST(request: Request) {
       name: body.name || "Unnamed character",
       prompt: body.prompt,
       image_url: body.imagePath,
-    })
     }, { onConflict: "id" })
     .select("*")
     .single();

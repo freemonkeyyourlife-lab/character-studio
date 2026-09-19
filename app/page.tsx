@@ -669,7 +669,7 @@ export default function Home() {
           </div>
 
           <div className="toolbarActions">
-            <button className="primary" onClick={() => void saveCharacter()}>Save character</button>
+            <button className="primary" onClick={() => void saveCharacter()} disabled={savingCharacter}>{savingCharacter ? "Saving…" : "Save character"}</button>
             {characters.some((item) => item.id === character.id) && (
               <button className="secondary smallButton" onClick={() => void deleteCharacter()}>Delete</button>
             )}

@@ -6,7 +6,7 @@ async function prompt(workflow: unknown) {
   const response = await fetch(baseUrl() + "/prompt", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: workflow, client_id: "character-studio" }),
+    body: JSON.stringify({ prompt: workflow, client_id: crypto.randomUUID() }),
   });
   if (!response.ok) throw new Error("ComfyUI rejected the workflow.");
   return response.json() as Promise<{ prompt_id: string }>;

@@ -196,6 +196,7 @@ export default function Home() {
   };
 
   const newCharacter = () => {
+    if (character.referenceImage?.startsWith("blob:")) URL.revokeObjectURL(character.referenceImage);
     setCharacter(blank());
     setImageUrl("");
     setReference(null);
@@ -416,6 +417,7 @@ export default function Home() {
   };
 
   const selectCharacter = (item: Character) => {
+    if (character.referenceImage?.startsWith("blob:")) URL.revokeObjectURL(character.referenceImage);
     setCharacter(item);
     setImageUrl("");
     setReference(null);
@@ -672,7 +674,13 @@ export default function Home() {
           <label>Age<input value={character.age} onChange={(e) => update("age", e.target.value)} placeholder="e.g. 28" /></label>
           <label>Appearance<textarea value={character.appearance} onChange={(e) => update("appearance", e.target.value)} placeholder="Hair, eyes, build, clothing style..." /></label>
           <label>Personality<textarea value={character.personality} onChange={(e) => update("personality", e.target.value)} placeholder="Calm, confident, funny..." /></label>
-          <label>Reference image<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; setReference(file); if (file) setCharacter((current) => ({ ...current, referenceImage: URL.createObjectURL(file) })); }} /></label>
+          <label>Reference image<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => {
+            const file = e.target.files?.[0] || null;
+            if (character.referenceImage?.startsWith("blob:")) URL.revokeObjectURL(character.referenceImage);
+            setReference(file);
+            if (file) setCharacter((current) => ({ ...current, referenceImage: URL.createObjectURL(file) }));
+            e.currentTarget.value = "";
+          }} /></label>
           {displayReference && (
             <img
               className="referencePreview"

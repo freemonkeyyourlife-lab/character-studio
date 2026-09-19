@@ -393,6 +393,32 @@ export default function Home() {
     setSaved(true);
   };
 
+  const exportCharacter = () => {
+    const payload = {
+      character: {
+        id: character.id,
+        name: character.name,
+        age: character.age,
+        appearance: character.appearance,
+        personality: character.personality,
+        referenceImagePath: character.referenceImagePath || null,
+        createdAt: character.createdAt,
+        updatedAt: character.updatedAt,
+      },
+      generations: generations
+        .filter((item) => item.characterId === character.id)
+        .map(({ imageUrl, ...item }) => item),
+      exportedAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = (character.name || "character").replace(/[^a-z0-9_-]+/gi, "-").toLowerCase() + ".json";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const signOut = async () => {
     const supabase = createSupabaseBrowserClient();
     if (supabase) await supabase.auth.signOut();
@@ -488,7 +514,8 @@ export default function Home() {
             ))}
           </select>
           <button className="secondary smallButton" onClick={newCharacter}>New character</button>
-          {characters.some((item) => item.id === character.id) && <button className="secondary smallButton" onClick={() => void duplicateCharacter()}>Duplicate</button>}
+          {characters.some((item) => item.id === character.id) && <button className="secondary smallButton" onClick={() => void duplicateCharacter()}>Duplicate</button>
+          {characters.some((item) => item.id === character.id) && <button className="secondary smallButton" onClick={exportCharacter}>Export JSON</button>}
         </div>
       </section>
 

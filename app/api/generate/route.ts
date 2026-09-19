@@ -1,7 +1,23 @@
 import { NextResponse } from "next/server";
 import { editWithHuggingFace, generateWithHuggingFace } from "@/lib/providers/huggingface";
+import { replicateProvider } from "@/lib/providers/replicate";
+import { falProvider } from "@/lib/providers/fal";
 
 export const runtime = "nodejs";
+
+async function generate(provider: string, prompt: string, model?: string) {
+  if (provider === "huggingface") return generateWithHuggingFace(prompt, model);
+  if (provider === "replicate") return replicateProvider.generate({ prompt, model });
+  if (provider === "fal") return falProvider.generate({ prompt, model });
+  throw new Error("Provider is not connected.");
+}
+
+async function edit(provider: string, image: Blob, prompt: string, model?: string) {
+  if (provider === "huggingface") return editWithHuggingFace(image, prompt, model);
+  if (provider === "replicate" && replicateProvider.edit) return replicateProvider.edit({ image, prompt, model });
+  if (provider === "fal" && falProvider.edit) return falProvider.edit({ image, prompt, model });
+  throw new Error("Reference editing is not available for this provider.");
+}
 
 export async function POST(request: Request) {
   try {
@@ -11,29 +27,29 @@ export async function POST(request: Request) {
       const form = await request.formData();
       const prompt = String(form.get("prompt") || "").trim();
       const model = String(form.get("model") || "").trim();
+      const provider = String(form.get("provider") || "huggingface");
       const file = form.get("reference");
 
       if (!prompt || !(file instanceof File)) {
         return NextResponse.json({ error: "Prompt and reference image are required." }, { status: 400 });
       }
 
-      const image = await editWithHuggingFace(file, prompt, model || undefined);
+      const image = await edit(provider, file, prompt, model || undefined);
       const bytes = Buffer.from(await image.arrayBuffer());
       return new Response(bytes, {
         status: 200,
-        headers: { "Content-Type": "image/png", "Cache-Control": "no-store" },
+        headers: { "Content-Type": image.type || "image/png", "Cache-Control": "no-store" },
       });
     }
 
     const body = (await request.json()) as { prompt?: string; provider?: string; model?: string };
     if (!body.prompt?.trim()) return NextResponse.json({ error: "Prompt is required." }, { status: 400 });
-    if (body.provider !== "huggingface") return NextResponse.json({ error: "Provider is not connected yet." }, { status: 400 });
 
-    const image = await generateWithHuggingFace(body.prompt.trim(), body.model);
+    const image = await generate(body.provider || "huggingface", body.prompt.trim(), body.model);
     const bytes = Buffer.from(await image.arrayBuffer());
     return new Response(bytes, {
       status: 200,
-      headers: { "Content-Type": "image/png", "Cache-Control": "no-store" },
+      headers: { "Content-Type": image.type || "image/png", "Cache-Control": "no-store" },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Image generation failed.";

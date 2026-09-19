@@ -59,12 +59,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Generation data is incomplete." }, { status: 400 });
   }
 
-  if (!body.imagePath.startsWith(userId + "/")) {
-    return NextResponse.json({ error: "Generation image does not belong to this account." }, { status: 403 });
+  if (body.name && body.name.length > 120) {
+    return NextResponse.json({ error: "Generation name is limited to 120 characters." }, { status: 400 });
   }
 
   if (body.prompt.length > 4000) {
     return NextResponse.json({ error: "Prompt is limited to 4000 characters." }, { status: 400 });
+  }
+
+  if (!body.imagePath.startsWith(userId + "/")) {
+    return NextResponse.json({ error: "Generation image does not belong to this account." }, { status: 403 });
   }
 
   const { data: character } = await supabase

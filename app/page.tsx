@@ -415,6 +415,15 @@ export default function Home() {
   };
 
   const importCharacter = async (file: File) => {
+    if (file.type !== "application/json") {
+      setError("Please select a JSON character export.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Character export must be 2 MB or smaller.");
+      return;
+    }
+
     setImportingCharacter(true);
     setError("");
     try {

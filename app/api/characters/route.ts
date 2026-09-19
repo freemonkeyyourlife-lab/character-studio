@@ -60,6 +60,11 @@ export async function POST(request: Request) {
 
   if (!body.id) return NextResponse.json({ error: "Character id is required." }, { status: 400 });
 
+  const requestedPath = body.referenceImagePath || null;
+  if (requestedPath && !requestedPath.startsWith(userId + "/")) {
+    return NextResponse.json({ error: "Reference image does not belong to this account." }, { status: 403 });
+  }
+
   const payload = {
     id: body.id,
     user_id: userId,
@@ -67,7 +72,7 @@ export async function POST(request: Request) {
     age: body.age || "",
     appearance: body.appearance || "",
     personality: body.personality || "",
-    reference_image_url: body.referenceImagePath || null,
+    reference_image_url: requestedPath,
     updated_at: new Date().toISOString(),
   };
 

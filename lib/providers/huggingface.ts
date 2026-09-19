@@ -1,7 +1,7 @@
 import { InferenceClient } from "@huggingface/inference";
 
 const DEFAULT_MODEL = "black-forest-labs/FLUX.1-schnell";
-const EDIT_MODEL = "black-forest-labs/FLUX.2-dev";
+const EDIT_MODEL = "black-forest-labs/FLUX.1-Kontext-dev";
 
 function client() {
   const token = process.env.HF_TOKEN;
@@ -10,19 +10,17 @@ function client() {
 }
 
 export async function generateWithHuggingFace(prompt: string) {
-  const image = await client().textToImage({
+  return client().textToImage({
     model: process.env.HF_IMAGE_MODEL || DEFAULT_MODEL,
     provider: "auto",
     inputs: prompt,
   });
-  return image;
 }
 
 export async function editWithHuggingFace(image: Blob, prompt: string) {
-  const result = await client().imageTextToImage({
+  return client().imageTextToImage({
     model: process.env.HF_EDIT_MODEL || EDIT_MODEL,
     provider: "auto",
     inputs: { image, prompt },
   });
-  return result;
 }

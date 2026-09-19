@@ -39,13 +39,23 @@ export async function DELETE(
     ...(generations || []).map((item) => item.image_url),
   ].filter((path): path is string => typeof path === "string" && path.length > 0);
 
+  const { error } = await supabase
+    .from("characters")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", userId);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
   if (paths.length) {
     const { error: storageError } = await supabase.storage.from("character-assets").remove(paths);
-    if (storageError) return NextResponse.json({ error: storageError.message }, { status: 500 });
+    if (storageError) {
+      return NextResponse.json({
+        ok: true,
+        warning: "Character deleted, but some stored images could not be removed.",
+      });
+    }
   }
-
-  const { error } = await supabase.from("characters").delete().eq("id", id).eq("user_id", userId);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ ok: true });
 }

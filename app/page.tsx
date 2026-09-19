@@ -505,7 +505,7 @@ export default function Home() {
       link.href = url;
       link.download = (item.name || "generation").replace(/[^a-z0-9_-]+/gi, "-").toLowerCase() + ".png";
       link.click();
-      URL.revokeObjectURL(url);
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not download generation.");
     } finally {

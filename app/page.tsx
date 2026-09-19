@@ -403,6 +403,18 @@ export default function Home() {
     }
   };
 
+  const refreshStorageUrl = async (path: string) => {
+    if (!cloudMode || !path) return "";
+    const response = await fetch("/api/storage/signed-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data?.url) throw new Error(data?.error || "Could not refresh image access.");
+    return data.url as string;
+  };
+
   const selectCharacter = (item: Character) => {
     setCharacter(item);
     setImageUrl("");
@@ -661,7 +673,23 @@ export default function Home() {
           <label>Appearance<textarea value={character.appearance} onChange={(e) => update("appearance", e.target.value)} placeholder="Hair, eyes, build, clothing style..." /></label>
           <label>Personality<textarea value={character.personality} onChange={(e) => update("personality", e.target.value)} placeholder="Calm, confident, funny..." /></label>
           <label>Reference image<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; setReference(file); if (file) setCharacter((current) => ({ ...current, referenceImage: URL.createObjectURL(file) })); }} /></label>
-          {displayReference && <img className="referencePreview" src={displayReference} alt="Character reference" />}
+          {displayReference && (
+            <img
+              className="referencePreview"
+              src={displayReference}
+              alt="Character reference"
+              onError={async (event) => {
+                if (!cloudMode || !referencePath || event.currentTarget.dataset.refreshed === "1") return;
+                event.currentTarget.dataset.refreshed = "1";
+                try {
+                  const url = await refreshStorageUrl(referencePath);
+                  setCharacter((current) => ({ ...current, referenceImage: url }));
+                } catch {
+                  setError("Character reference could not be refreshed.");
+                }
+              }}
+            />
+          )}
           {reference && <div className="saved">Reference ready: {reference.name}</div>}
 
           <div className="providerBox">
@@ -727,7 +755,20 @@ export default function Home() {
           <div className="vaultGrid">{currentGenerations.map((item) => (
             <div className="vaultItem" key={item.id}>
               <button className="vaultPreviewButton" onClick={() => setImageUrl(item.imageUrl)} aria-label={`Open ${item.name}`}>
-                <img src={item.imageUrl} alt={item.name} /><strong>{item.name}</strong><span>{new Date(item.createdAt).toLocaleString()}</span>
+                <img
+                  src={item.imageUrl}
+                  alt={item.name}
+                  onError={async (event) => {
+                    if (!cloudMode || !item.imagePath || event.currentTarget.dataset.refreshed === "1") return;
+                    event.currentTarget.dataset.refreshed = "1";
+                    try {
+                      const url = await refreshStorageUrl(item.imagePath);
+                      setGenerations((current) => current.map((generation) => generation.id === item.id ? { ...generation, imageUrl: url } : generation));
+                    } catch {
+                      setError("Saved generation could not be refreshed.");
+                    }
+                  }}
+                /><strong>{item.name}</strong><span>{new Date(item.createdAt).toLocaleString()}</span>
               </button>
               <div className="vaultItemActions">
                 <button className="secondary smallButton" onClick={() => void downloadGeneration(item)} disabled={downloadingGeneration === item.id}>{downloadingGeneration === item.id ? "Downloading…" : "Download"}</button>

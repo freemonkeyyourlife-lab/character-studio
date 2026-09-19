@@ -77,5 +77,17 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ generation: row });
+  const signed = await supabase.storage.from("character-assets").createSignedUrl(row.image_url, 3600);
+
+  return NextResponse.json({
+    generation: {
+      id: row.id,
+      characterId: row.character_id,
+      name: row.name,
+      prompt: row.prompt,
+      imagePath: row.image_url,
+      imageUrl: signed.data?.signedUrl || "",
+      createdAt: row.created_at,
+    },
+  });
 }

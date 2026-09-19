@@ -1,9 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { imageProviders, type Character } from "@/lib/character";
 
+type SavedGeneration = {
+  id: string;
+  name: string;
+  prompt: string;
+  imageUrl: string;
+  createdAt: string;
+};
+
 const initialCharacter: Character = { name: "", age: "", appearance: "", personality: "" };
+const STORAGE_KEY = "character-studio-generations";
 
 export default function Home() {
   const [character, setCharacter] = useState(initialCharacter);
@@ -12,6 +21,16 @@ export default function Home() {
   const [imageUrl, setImageUrl] = useState("");
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
+  const [generations, setGenerations] = useState<SavedGeneration[]>([]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) setGenerations(JSON.parse(raw) as SavedGeneration[]);
+    } catch {
+      // Ignore invalid local browser data.
+    }
+  }, []);
 
   const prompt = useMemo(
     () => [
@@ -28,11 +47,19 @@ export default function Home() {
     setCharacter((current) => ({ ...current, [key]: value }));
   };
 
+  const saveGeneration = (next: SavedGeneration) => {
+    const updated = [next, ...generations].slice(0, 3);
+    setGenerations(updated);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      setError("Image created, but the browser could not store another saved image.");
+    }
+  };
+
   const generate = async () => {
     setGenerating(true);
     setError("");
-    setImageUrl("");
-
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
@@ -47,12 +74,33 @@ export default function Home() {
       }
 
       const blob = await response.blob();
-      setImageUrl(URL.createObjectURL(blob));
+      const nextUrl = URL.createObjectURL(blob);
+      setImageUrl(nextUrl);
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === "string") {
+          saveGeneration({
+            id: crypto.randomUUID(),
+            name: character.name || "Unnamed character",
+            prompt,
+            imageUrl: reader.result,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      };
+      reader.readAsDataURL(blob);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Generation failed.");
     } finally {
       setGenerating(false);
     }
+  };
+
+  const restore = (item: SavedGeneration) => {
+    setImageUrl(item.imageUrl);
+    setError("");
+    setCharacter((current) => ({ ...current, name: item.name }));
   };
 
   return (
@@ -63,7 +111,7 @@ export default function Home() {
           <h1>Create your character</h1>
           <p>One simple interface, with image providers behind it.</p>
         </div>
-        <div className="status">MVP · Generation connected</div>
+        <div className="status">MVP · Generation + Vault</div>
       </header>
 
       <section className="grid">
@@ -125,6 +173,29 @@ export default function Home() {
 
           {error && <div className="error">{error}</div>}
         </div>
+      </section>
+
+      <section className="vault card">
+        <div className="previewTop">
+          <div>
+            <h2>Character Vault</h2>
+            <p className="vaultHint">The last 3 generated images are kept in this browser.</p>
+          </div>
+          <span>{generations.length}/3 saved</span>
+        </div>
+        {generations.length === 0 ? (
+          <div className="emptyVault">Generate your first character image and it will appear here.</div>
+        ) : (
+          <div className="vaultGrid">
+            {generations.map((item) => (
+              <button className="vaultItem" key={item.id} onClick={() => restore(item)}>
+                <img src={item.imageUrl} alt={item.name} />
+                <strong>{item.name}</strong>
+                <span>{new Date(item.createdAt).toLocaleString()}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </section>
     </main>
   );

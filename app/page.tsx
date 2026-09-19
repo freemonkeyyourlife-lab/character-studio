@@ -29,7 +29,8 @@ export default function Home() {
   const [character, setCharacter] = useState<Character>(blank);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [generations, setGenerations] = useState<SavedGeneration[]>([]);
-  const [provider, setProvider] = useState(imageProviders[0].id);\n  const [model, setModel] = useState(imageProviders[0].models[0]?.id || "");
+  const [provider, setProvider] = useState(imageProviders[0].id);
+  const [model, setModel] = useState(imageProviders[0].models[0]?.id || "");
   const [imageUrl, setImageUrl] = useState("");
   const [generating, setGenerating] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -49,9 +50,12 @@ export default function Home() {
     } catch {}
   }, []);
 
-  const selectedProvider = imageProviders.find((item) => item.id === provider) || imageProviders[0];\n\n  const prompt = useMemo(
+  const selectedProvider = imageProviders.find((item) => item.id === provider) || imageProviders[0];
+
+  const prompt = useMemo(
     () => ["photorealistic portrait", character.appearance, character.age ? `age ${character.age}` : "", character.personality]
-      .filter(Boolean).join(", "),
+      .filter(Boolean)
+      .join(", "),
     [character]
   );
 
@@ -91,6 +95,7 @@ export default function Home() {
       if (reference) {
         const form = new FormData();
         form.append("prompt", prompt);
+        form.append("model", model);
         form.append("reference", reference);
         response = await fetch("/api/generate", { method: "POST", body: form });
       } else {
@@ -100,11 +105,13 @@ export default function Home() {
           body: JSON.stringify({ provider, model, prompt }),
         });
       }
+
       const type = response.headers.get("content-type") || "";
       if (!response.ok) {
         const data = type.includes("application/json") ? await response.json() : null;
         throw new Error(data?.error || "Generation failed.");
       }
+
       const blob = await response.blob();
       const nextUrl = URL.createObjectURL(blob);
       setImageUrl(nextUrl);
@@ -178,12 +185,27 @@ export default function Home() {
           <label>Personality<textarea value={character.personality} onChange={(e) => update("personality", e.target.value)} placeholder="Calm, confident, funny..." /></label>
           <label>Reference image<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setReference(e.target.files?.[0] || null)} /></label>
           {reference && <div className="saved">Reference ready: {reference.name}</div>}
+
           <div className="providerBox">
-            <div><strong>Image model</strong><span>Provider adapter</span></div>
-            <select value={provider} onChange={(e) => { const next = e.target.value; setProvider(next); setModel(imageProviders.find((item) => item.id === next)?.models[0]?.id || ""); }}>
-              {imageProviders.map((item) => <option key={item.id} value={item.id} disabled={item.status !== "ready"}>{item.name}{item.status === "planned" ? " · planned" : ""}</option>)}
+            <div><strong>Image model</strong><span>{selectedProvider.description}</span></div>
+            <select value={provider} onChange={(e) => {
+              const next = e.target.value;
+              setProvider(next);
+              setModel(imageProviders.find((item) => item.id === next)?.models[0]?.id || "");
+            }}>
+              {imageProviders.map((item) => (
+                <option key={item.id} value={item.id} disabled={item.status !== "ready"}>
+                  {item.name}{item.status === "planned" ? " · planned" : ""}
+                </option>
+              ))}
+            </select>
+            <select value={model} onChange={(e) => setModel(e.target.value)} disabled={selectedProvider.models.length === 0}>
+              {selectedProvider.models.map((item) => (
+                <option key={item.id} value={item.id}>{item.name}</option>
+              ))}
             </select>
           </div>
+
           <button className="primary" onClick={saveCharacter}>Save character</button>
           {saved && <div className="saved">Character saved.</div>}
         </div>

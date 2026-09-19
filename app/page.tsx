@@ -85,6 +85,7 @@ export default function Home() {
         }
       } catch {
         loadLocal();
+        if (!cancelled) setError("Cloud data could not be loaded. Using local browser storage.");
       } finally {
         if (!cancelled) setAuthChecked(true);
       }

@@ -7,6 +7,13 @@ import { comfyuiProvider } from "@/lib/providers/comfyui";
 
 export const runtime = "nodejs";
 
+async function toBlob(value: Blob | string): Promise<Blob> {
+  if (value instanceof Blob) return value;
+  const response = await fetch(value);
+  if (!response.ok) throw new Error("Image provider returned an unreadable image.");
+  return response.blob();
+}
+
 async function generate(provider: string, prompt: string, model?: string) {
   if (!getProvider(provider)) throw new Error("Unknown image provider.");
   if (!model || !canUseModel(provider, model, "text-to-image")) throw new Error("Selected model does not support text-to-image generation.");
@@ -67,7 +74,7 @@ export async function POST(request: Request) {
       const selection = selectionError(provider, model, "image-edit");
       if (selection) return NextResponse.json({ error: selection }, { status: 400 });
 
-      const image = await edit(provider, file, prompt, model);
+      const image = await toBlob(await edit(provider, file, prompt, model));
       const bytes = Buffer.from(await image.arrayBuffer());
       return new Response(bytes, {
         status: 200,
@@ -88,7 +95,7 @@ export async function POST(request: Request) {
     const selection = selectionError(provider, model, "text-to-image");
     if (selection) return NextResponse.json({ error: selection }, { status: 400 });
 
-    const image = await generate(provider, body.prompt.trim(), model);
+    const image = await toBlob(await generate(provider, body.prompt.trim(), model));
     const bytes = Buffer.from(await image.arrayBuffer());
     return new Response(bytes, {
       status: 200,

@@ -70,6 +70,16 @@ export async function POST(request: Request) {
 
   if (!character) return NextResponse.json({ error: "Character not found." }, { status: 404 });
 
+  const { data: existing } = await supabase
+    .from("generations")
+    .select("id, image_url, user_id, character_id")
+    .eq("id", body.id)
+    .maybeSingle();
+
+  if (existing && (existing.user_id !== userId || existing.character_id !== body.characterId)) {
+    return NextResponse.json({ error: "Generation id already belongs to another account or character." }, { status: 409 });
+  }
+
   const { data: row, error } = await supabase
     .from("generations")
     .upsert({

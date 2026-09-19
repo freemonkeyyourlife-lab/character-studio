@@ -675,7 +675,7 @@ export default function Home() {
               <button className="secondary smallButton" onClick={() => void deleteCharacter()}>Delete</button>
             )}
           </div>
-          {saved && <div className="saved">Character saved.</div>}
+          {saved && <div className="saved" role="status">Character saved.</div>}
         </div>
 
         <div className="card preview">
@@ -686,7 +686,7 @@ export default function Home() {
           <div className="tags">{character.age && <span>Age {character.age}</span>}<span>{provider.toUpperCase()}</span>{reference && <span>REFERENCE</span>}</div>
           <div className="promptBox"><small>Generated prompt</small><div>{prompt || "Add appearance and personality details."}</div></div>
           <button className="secondary" onClick={() => void generate()} disabled={generating || !prompt}>{generating ? "Generating image…" : reference ? "Generate from reference" : "Generate image"}</button>
-          {error && <div className="error">{error}</div>}
+          {error && <div className="error" role="alert">{error}</div>}
         </div>
       </section>
 

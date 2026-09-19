@@ -20,15 +20,21 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const generations = await Promise.all((rows || []).map(async (item) => ({
-    id: item.id,
-    characterId: item.character_id,
-    name: item.name,
-    prompt: item.prompt,
-    imagePath: item.image_url,
-    imageUrl: (await supabase.storage.from("character-assets").createSignedUrl(item.image_url, 3600)).data?.signedUrl || "",
-    createdAt: item.created_at,
-  })));
+  const generations = await Promise.all((rows || []).map(async (item) => {
+    const signed = await supabase.storage
+      .from("character-assets")
+      .createSignedUrl(item.image_url, 3600);
+
+    return {
+      id: item.id,
+      characterId: item.character_id,
+      name: item.name,
+      prompt: item.prompt,
+      imagePath: item.image_url,
+      imageUrl: signed.data?.signedUrl || "",
+      createdAt: item.created_at,
+    };
+  }));
 
   return NextResponse.json({ generations });
 }

@@ -97,3 +97,22 @@ input:focus, textarea:focus, select:focus { border-color: #7b8494; }
   border: 1px solid #e5e7eb;
   margin-top: 8px;
 }
+
+
+.smallInput {
+  min-width: 180px;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  color: inherit;
+}
+
+.smallInput:focus {
+  outline: 2px solid #111827;
+  outline-offset: 1px;
+}
+
+@media (max-width: 720px) {
+  .smallInput { min-width: 0; width: 100%; }
+}

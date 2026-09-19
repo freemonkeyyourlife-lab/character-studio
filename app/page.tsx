@@ -333,6 +333,14 @@ export default function Home() {
 
   const generate = async () => {
     if (generating) return;
+    if (!model) {
+      setError(reference ? "No reference-edit model is available for this provider." : "No image model is available for this provider.");
+      return;
+    }
+    if (cloudMode && !authEmail) {
+      setError("Please sign in again before generating images.");
+      return;
+    }
     setGenerating(true);
     setError("");
 

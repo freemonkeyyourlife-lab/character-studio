@@ -49,6 +49,7 @@ export default function Home() {
   const [vaultSearch, setVaultSearch] = useState("");
   const [characterSort, setCharacterSort] = useState<"updated" | "name">("updated");
   const [importingCharacter, setImportingCharacter] = useState(false);
+  const [downloadingGeneration, setDownloadingGeneration] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -493,6 +494,8 @@ export default function Home() {
   };
 
   const downloadGeneration = async (item: SavedGeneration) => {
+    setDownloadingGeneration(item.id);
+    setError("");
     try {
       const response = await fetch(item.imageUrl);
       if (!response.ok) throw new Error("Image could not be downloaded.");
@@ -505,6 +508,8 @@ export default function Home() {
       URL.revokeObjectURL(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not download generation.");
+    } finally {
+      setDownloadingGeneration("");
     }
   };
 
@@ -693,7 +698,7 @@ export default function Home() {
                 <img src={item.imageUrl} alt={item.name} /><strong>{item.name}</strong><span>{new Date(item.createdAt).toLocaleString()}</span>
               </button>
               <div className="vaultItemActions">
-                <button className="secondary smallButton" onClick={() => void downloadGeneration(item)}>Download</button>
+                <button className="secondary smallButton" onClick={() => void downloadGeneration(item)} disabled={downloadingGeneration === item.id}>{downloadingGeneration === item.id ? "Downloading…" : "Download"}</button>
                 <button className="secondary smallButton" onClick={() => void deleteGeneration(item)}>Delete</button>
               </div>
             </div>

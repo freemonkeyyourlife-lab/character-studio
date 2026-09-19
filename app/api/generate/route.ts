@@ -6,6 +6,7 @@ import { falProvider } from "@/lib/providers/fal";
 import { comfyuiProvider } from "@/lib/providers/comfyui";
 
 export const runtime = "nodejs";
+export const maxDuration = 120;
 
 async function toBlob(value: Blob | string): Promise<Blob> {
   if (value instanceof Blob) return value;

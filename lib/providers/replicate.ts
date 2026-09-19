@@ -1,6 +1,8 @@
 import Replicate from "replicate";
 import type { ImageEditInput, ImageGenerationInput, ImageProviderAdapter } from "./types";
 
+type ReplicateModel = `${string}/${string}` | `${string}/${string}:${string}`;
+
 function client() {
   const token = process.env.REPLICATE_API_TOKEN;
   if (!token) throw new Error("REPLICATE_API_TOKEN is not configured.");
@@ -24,13 +26,13 @@ async function outputToBlob(output: unknown): Promise<Blob> {
 }
 
 export const replicateProvider: ImageProviderAdapter = {
-  async generate({ prompt, model }) {
-    const selected = model || process.env.REPLICATE_IMAGE_MODEL || "black-forest-labs/flux-schnell";
+  async generate({ prompt, model }: ImageGenerationInput) {
+    const selected = (model || process.env.REPLICATE_IMAGE_MODEL || "black-forest-labs/flux-schnell") as ReplicateModel;
     const output = await client().run(selected, { input: { prompt } });
     return outputToBlob(output);
   },
-  async edit({ prompt, model, image }) {
-    const selected = model || process.env.REPLICATE_EDIT_MODEL;
+  async edit({ prompt, model, image }: ImageEditInput) {
+    const selected = (model || process.env.REPLICATE_EDIT_MODEL) as ReplicateModel | undefined;
     if (!selected) throw new Error("REPLICATE_EDIT_MODEL is not configured.");
     const output = await client().run(selected, { input: { prompt, image } });
     return outputToBlob(output);

@@ -9,7 +9,7 @@ function client() {
   return new InferenceClient(token);
 }
 
-export async function generateWithHuggingFace(prompt: string, model?: string) {
+export async function generateWithHuggingFace(prompt: string, model?: string): Promise<Blob> {
   return client().textToImage({
     model: model || process.env.HF_IMAGE_MODEL || DEFAULT_MODEL,
     provider: "auto",
@@ -17,10 +17,11 @@ export async function generateWithHuggingFace(prompt: string, model?: string) {
   });
 }
 
-export async function editWithHuggingFace(image: Blob, prompt: string, model?: string) {
+export async function editWithHuggingFace(image: Blob, prompt: string, model?: string): Promise<Blob> {
   return client().imageTextToImage({
     model: model || process.env.HF_EDIT_MODEL || EDIT_MODEL,
     provider: "auto",
-    inputs: { image, prompt },
+    inputs: image,
+    parameters: { prompt },
   });
 }

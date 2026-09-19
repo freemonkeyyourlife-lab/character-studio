@@ -61,7 +61,7 @@ export const imageProviders: ImageProvider[] = [
     status: "ready",
     description: "Local or self-hosted ComfyUI HTTP API. Requires COMFYUI_URL.",
     models: [
-      { id: "checkpoint", name: "Configured checkpoint", capabilities: ["text-to-image", "image-edit"] },
+      { id: "checkpoint", name: "Configured checkpoint", capabilities: ["text-to-image"] },
     ],
   },
 ];

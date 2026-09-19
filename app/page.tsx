@@ -182,6 +182,39 @@ export default function Home() {
     setSaved(false);
     setError("");
   };
+  const duplicateCharacter = async () => {
+    const copy: Character = {
+      ...character,
+      id: crypto.randomUUID(),
+      name: character.name ? character.name + " Copy" : "Character Copy",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setCharacter(copy);
+    setImageUrl("");
+    setReference(null);
+    setSaved(false);
+    setError("");
+    setReferencePath("");
+    setCharacters((current) => [copy, ...current.filter((item) => item.id !== copy.id)]);
+    if (!cloudMode) {
+      localStorage.setItem(CHARACTER_KEY, JSON.stringify([copy, ...characters.filter((item) => item.id !== copy.id)]));
+    } else {
+      const response = await fetch("/api/characters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...copy, referenceImagePath: null }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        setError(data?.error || "Could not duplicate character.");
+      } else {
+        setSaved(true);
+      }
+    }
+  };
+
+
 
   const saveGenerationLocal = (item: SavedGeneration) => {
     const updated = [item, ...generations].slice(0, 12);
@@ -445,6 +478,7 @@ export default function Home() {
             ))}
           </select>
           <button className="secondary smallButton" onClick={newCharacter}>New character</button>
+          {characters.some((item) => item.id === character.id) && <button className="secondary smallButton" onClick={() => void duplicateCharacter()}>Duplicate</button>}
         </div>
       </section>
 

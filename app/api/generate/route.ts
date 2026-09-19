@@ -53,7 +53,14 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Reference image must be PNG, JPEG or WebP." }, { status: 400 });
       }
 
-      const image = await edit(provider, file, prompt, model || undefined);
+      if (!getProvider(provider)) {
+        return NextResponse.json({ error: "Unknown image provider." }, { status: 400 });
+      }
+      if (!model) {
+        return NextResponse.json({ error: "Model is required for reference editing." }, { status: 400 });
+      }
+
+      const image = await edit(provider, file, prompt, model);
       const bytes = Buffer.from(await image.arrayBuffer());
       return new Response(bytes, {
         status: 200,

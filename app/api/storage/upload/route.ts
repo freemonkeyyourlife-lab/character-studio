@@ -17,7 +17,8 @@ export async function POST(request: Request) {
 
   const form = await request.formData();
   const file = form.get("file");
-  const folder = String(form.get("folder") || "uploads").replace(/[^a-zA-Z0-9_-]/g, "");
+  const requestedFolder = String(form.get("folder") || "uploads");
+  const folder = requestedFolder.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40) || "uploads";
 
   if (!(file instanceof File)) return NextResponse.json({ error: "File is required." }, { status: 400 });
   if (!ALLOWED_TYPES.has(file.type)) return NextResponse.json({ error: "Only PNG, JPEG and WebP images are supported." }, { status: 400 });

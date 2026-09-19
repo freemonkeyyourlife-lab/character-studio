@@ -29,7 +29,7 @@ export default function Home() {
   const [character, setCharacter] = useState<Character>(blank);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [generations, setGenerations] = useState<SavedGeneration[]>([]);
-  const [provider, setProvider] = useState(imageProviders[0].id);
+  const [provider, setProvider] = useState(imageProviders[0].id);\n  const [model, setModel] = useState(imageProviders[0].models[0]?.id || "");
   const [imageUrl, setImageUrl] = useState("");
   const [generating, setGenerating] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -49,7 +49,7 @@ export default function Home() {
     } catch {}
   }, []);
 
-  const prompt = useMemo(
+  const selectedProvider = imageProviders.find((item) => item.id === provider) || imageProviders[0];\n\n  const prompt = useMemo(
     () => ["photorealistic portrait", character.appearance, character.age ? `age ${character.age}` : "", character.personality]
       .filter(Boolean).join(", "),
     [character]
@@ -97,7 +97,7 @@ export default function Home() {
         response = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ provider, prompt }),
+          body: JSON.stringify({ provider, model, prompt }),
         });
       }
       const type = response.headers.get("content-type") || "";
@@ -180,7 +180,7 @@ export default function Home() {
           {reference && <div className="saved">Reference ready: {reference.name}</div>}
           <div className="providerBox">
             <div><strong>Image model</strong><span>Provider adapter</span></div>
-            <select value={provider} onChange={(e) => setProvider(e.target.value)}>
+            <select value={provider} onChange={(e) => { const next = e.target.value; setProvider(next); setModel(imageProviders.find((item) => item.id === next)?.models[0]?.id || ""); }}>
               {imageProviders.map((item) => <option key={item.id} value={item.id} disabled={item.status !== "ready"}>{item.name}{item.status === "planned" ? " · planned" : ""}</option>)}
             </select>
           </div>

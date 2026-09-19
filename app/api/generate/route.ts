@@ -8,6 +8,20 @@ import { comfyuiProvider } from "@/lib/providers/comfyui";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
+async function requireConfiguredAuth() {
+  const supabase = await import("@/lib/supabase/server").then((module) => module.createSupabaseServerClient());
+  if (!supabase) return;
+
+  const { data, error } = await supabase.auth.getClaims();
+  const userId = typeof data?.claims?.sub === "string" ? data.claims.sub : null;
+  if (error || !userId) {
+    throw new Response(JSON.stringify({ error: "Authentication required for image generation." }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
+
 async function toBlob(value: Blob | string): Promise<Blob> {
   if (value instanceof Blob) return value;
   const response = await fetch(value);
@@ -48,6 +62,7 @@ function selectionError(provider: string, model: string | undefined, capability:
 
 export async function POST(request: Request) {
   try {
+    await requireConfiguredAuth();
     const contentType = request.headers.get("content-type") || "";
 
     if (contentType.includes("multipart/form-data")) {
@@ -103,6 +118,7 @@ export async function POST(request: Request) {
       headers: { "Content-Type": image.type || "image/png", "Cache-Control": "no-store" },
     });
   } catch (error) {
+    if (error instanceof Response) return error;
     const message = error instanceof Error ? error.message : "Image generation failed.";
     return NextResponse.json({ error: message }, { status: 500 });
   }

@@ -42,6 +42,8 @@ export default function Home() {
   const [cloudMode, setCloudMode] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [authEmail, setAuthEmail] = useState("");
+  const [migrationAvailable, setMigrationAvailable] = useState(false);
+  const [migrating, setMigrating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,6 +59,9 @@ export default function Home() {
 
           if (cancelled) return;
           setCloudMode(true);
+          try {
+            setMigrationAvailable(Boolean(localStorage.getItem(CHARACTER_KEY)));
+          } catch {}
           try {
             const supabase = createSupabaseBrowserClient();
             const session = supabase ? await supabase.auth.getSession() : { data: { session: null } };
@@ -169,6 +174,87 @@ export default function Home() {
     setGenerations(updated);
     localStorage.setItem(GENERATION_KEY, JSON.stringify(updated));
   };
+
+  const migrateLocalData = async () => {
+    if (!cloudMode || migrating) return;
+
+    setMigrating(true);
+    setError("");
+
+    try {
+      const localCharacters = JSON.parse(localStorage.getItem(CHARACTER_KEY) || "[]") as Character[];
+      const localGenerations = JSON.parse(localStorage.getItem(GENERATION_KEY) || "[]") as SavedGeneration[];
+
+      for (const item of localCharacters) {
+        let referenceImagePath = item.referenceImagePath || "";
+        if (!referenceImagePath && item.referenceImage) {
+          const response = await fetch(item.referenceImage);
+          if (response.ok) {
+            const blob = await response.blob();
+            const file = new File([blob], `reference-${item.id}.png`, { type: blob.type || "image/png" });
+            referenceImagePath = (await uploadFile(file, "references")).path;
+          }
+        }
+
+        const response = await fetch("/api/characters", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: item.id,
+            name: item.name,
+            age: item.age,
+            appearance: item.appearance,
+            personality: item.personality,
+            referenceImagePath: referenceImagePath || null,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error || `Could not import ${item.name || "character"}.`);
+      }
+
+      for (const item of localGenerations) {
+        if (!item.imageUrl.startsWith("data:")) continue;
+
+        const response = await fetch(item.imageUrl);
+        if (!response.ok) continue;
+        const blob = await response.blob();
+        const file = new File([blob], `generation-${item.id}.png`, { type: blob.type || "image/png" });
+        const uploaded = await uploadFile(file, "generations");
+
+        const generationResponse = await fetch("/api/generations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: item.id,
+            characterId: item.characterId,
+            name: item.name,
+            prompt: item.prompt,
+            imagePath: uploaded.path,
+          }),
+        });
+        const generationData = await generationResponse.json();
+        if (!generationResponse.ok && !String(generationData?.error || "").toLowerCase().includes("duplicate")) {
+          throw new Error(generationData?.error || "Could not import generation.");
+        }
+      }
+
+      const charactersResponse = await fetch("/api/characters", { cache: "no-store" });
+      const charactersData = await charactersResponse.json();
+      const generationsResponse = await fetch("/api/generations", { cache: "no-store" });
+      const generationsData = await generationsResponse.json();
+      setCharacters(charactersData.characters || []);
+      setGenerations(generationsData.generations || []);
+      setMigrationAvailable(false);
+      localStorage.removeItem(CHARACTER_KEY);
+      localStorage.removeItem(GENERATION_KEY);
+      if (charactersData.characters?.[0]) selectCharacter(charactersData.characters[0]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Local data import failed.");
+    } finally {
+      setMigrating(false);
+    }
+  };
+
 
   const generate = async () => {
     setGenerating(true);
@@ -310,6 +396,11 @@ export default function Home() {
           <div className="status">{cloudMode ? `CLOUD · SYNCED${authEmail ? ` · ${authEmail}` : ""}` : "LOCAL · BROWSER"}</div>
           {authChecked && cloudMode && <button className="secondary smallButton" onClick={signOut}>Sign out</button>}
           {authChecked && !cloudMode && <a className="secondary smallButton" href="/auth">Sign in</a>}
+          {authChecked && cloudMode && migrationAvailable && (
+            <button className="secondary smallButton" onClick={() => void migrateLocalData()} disabled={migrating}>
+              {migrating ? "Importing…" : "Import local data"}
+            </button>
+          )}
         </div>
       </header>
 

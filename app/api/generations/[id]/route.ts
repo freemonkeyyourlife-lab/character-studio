@@ -25,13 +25,6 @@ export async function DELETE(
   if (lookupError) return NextResponse.json({ error: lookupError.message }, { status: 500 });
   if (!generation) return NextResponse.json({ error: "Generation not found." }, { status: 404 });
 
-  if (generation.image_url) {
-    const { error: storageError } = await supabase.storage
-      .from("character-assets")
-      .remove([generation.image_url]);
-    if (storageError) return NextResponse.json({ error: storageError.message }, { status: 500 });
-  }
-
   const { error } = await supabase
     .from("generations")
     .delete()
@@ -39,5 +32,19 @@ export async function DELETE(
     .eq("user_id", userId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  if (generation.image_url) {
+    const { error: storageError } = await supabase.storage
+      .from("character-assets")
+      .remove([generation.image_url]);
+
+    if (storageError) {
+      return NextResponse.json({
+        ok: true,
+        warning: "Generation deleted, but its stored image could not be removed.",
+      });
+    }
+  }
+
   return NextResponse.json({ ok: true });
 }

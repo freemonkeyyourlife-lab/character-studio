@@ -7,6 +7,7 @@
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 5. Start the app and open `/auth` to create an account.
+6. Configure image providers in `.env.local` as needed. Hugging Face uses `HF_TOKEN`; Replicate uses `REPLICATE_API_TOKEN`; fal uses `FAL_KEY`; ComfyUI uses `COMFYUI_URL` and `COMFYUI_CHECKPOINT`.
 
 The schema creates:
 

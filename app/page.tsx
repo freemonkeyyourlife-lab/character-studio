@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { imageProviders, type Character } from "@/lib/character";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type SavedGeneration = {
   id: string;
@@ -9,6 +10,7 @@ type SavedGeneration = {
   name: string;
   prompt: string;
   imageUrl: string;
+  imagePath?: string;
   createdAt: string;
 };
 
@@ -36,26 +38,66 @@ export default function Home() {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [reference, setReference] = useState<File | null>(null);
+  const [referencePath, setReferencePath] = useState("");
+  const [cloudMode, setCloudMode] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    try {
-      const storedCharacters = localStorage.getItem(CHARACTER_KEY);
-      const storedGenerations = localStorage.getItem(GENERATION_KEY);
-      if (storedCharacters) {
-        const list = JSON.parse(storedCharacters) as Character[];
-        setCharacters(list);
-        if (list[0]) setCharacter(list[0]);
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const response = await fetch("/api/characters", { cache: "no-store" });
+        if (response.ok) {
+          const data = await response.json();
+          const cloudCharacters = (data.characters || []) as Character[];
+          const generationResponse = await fetch("/api/generations", { cache: "no-store" });
+          const generationData = generationResponse.ok ? await generationResponse.json() : { generations: [] };
+
+          if (cancelled) return;
+          setCloudMode(true);
+          setCharacters(cloudCharacters);
+          setGenerations(generationData.generations || []);
+          if (cloudCharacters[0]) {
+            setCharacter(cloudCharacters[0]);
+            setReferencePath((cloudCharacters[0] as Character & { referenceImagePath?: string }).referenceImagePath || "");
+          }
+        } else {
+          loadLocal();
+        }
+      } catch {
+        loadLocal();
+      } finally {
+        if (!cancelled) setAuthChecked(true);
       }
-      if (storedGenerations) setGenerations(JSON.parse(storedGenerations) as SavedGeneration[]);
-    } catch {}
+    };
+
+    const loadLocal = () => {
+      try {
+        const storedCharacters = localStorage.getItem(CHARACTER_KEY);
+        const storedGenerations = localStorage.getItem(GENERATION_KEY);
+        if (storedCharacters) {
+          const list = JSON.parse(storedCharacters) as Character[];
+          setCharacters(list);
+          if (list[0]) setCharacter(list[0]);
+        }
+        if (storedGenerations) setGenerations(JSON.parse(storedGenerations) as SavedGeneration[]);
+      } catch {}
+    };
+
+    load();
+    return () => { cancelled = true; };
   }, []);
 
   const selectedProvider = imageProviders.find((item) => item.id === provider) || imageProviders[0];
 
   const prompt = useMemo(
-    () => ["photorealistic portrait", character.appearance, character.age ? `age ${character.age}` : "", character.personality]
-      .filter(Boolean)
-      .join(", "),
+    () => [
+      "photorealistic portrait",
+      character.appearance,
+      character.age ? `age ${character.age}` : "",
+      character.personality,
+    ].filter(Boolean).join(", "),
     [character]
   );
 
@@ -64,24 +106,59 @@ export default function Home() {
     setCharacter((current) => ({ ...current, [key]: value, updatedAt: new Date().toISOString() }));
   };
 
-  const saveCharacter = () => {
+  const saveCharacter = async (pathOverride?: string) => {
     const next = { ...character, updatedAt: new Date().toISOString() };
-    const updated = [next, ...characters.filter((item) => item.id !== next.id)];
-    setCharacter(next);
-    setCharacters(updated);
-    setSaved(true);
-    localStorage.setItem(CHARACTER_KEY, JSON.stringify(updated));
+    const nextPath = pathOverride ?? referencePath;
+
+    try {
+      if (cloudMode) {
+        const response = await fetch("/api/characters", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...next,
+            referenceImagePath: nextPath || null,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error || "Could not save character.");
+        const savedCharacter = data.character as Character;
+        setCharacter({ ...next, ...savedCharacter, referenceImagePath: nextPath } as Character);
+        setCharacters((current) => [savedCharacter, ...current.filter((item) => item.id !== savedCharacter.id)]);
+      } else {
+        const updated = [next, ...characters.filter((item) => item.id !== next.id)];
+        setCharacters(updated);
+        localStorage.setItem(CHARACTER_KEY, JSON.stringify(updated));
+      }
+      setReferencePath(nextPath);
+      setSaved(true);
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save character.");
+      return false;
+    }
+  };
+
+  const uploadFile = async (file: File, folder: string) => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("folder", folder);
+    const response = await fetch("/api/storage/upload", { method: "POST", body: form });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.error || "Image upload failed.");
+    return data as { path: string; signedUrl: string };
   };
 
   const newCharacter = () => {
     setCharacter(blank());
     setImageUrl("");
     setReference(null);
+    setReferencePath("");
     setSaved(false);
     setError("");
   };
 
-  const saveGeneration = (item: SavedGeneration) => {
+  const saveGenerationLocal = (item: SavedGeneration) => {
     const updated = [item, ...generations].slice(0, 12);
     setGenerations(updated);
     localStorage.setItem(GENERATION_KEY, JSON.stringify(updated));
@@ -90,7 +167,16 @@ export default function Home() {
   const generate = async () => {
     setGenerating(true);
     setError("");
+
     try {
+      let uploadedReferencePath = referencePath;
+      if (cloudMode && reference) {
+        const uploaded = await uploadFile(reference, "references");
+        uploadedReferencePath = uploaded.path;
+        setReferencePath(uploaded.path);
+        await saveCharacter(uploaded.path);
+      }
+
       let response: Response;
       if (reference) {
         const form = new FormData();
@@ -113,23 +199,44 @@ export default function Home() {
       }
 
       const blob = await response.blob();
-      const nextUrl = URL.createObjectURL(blob);
-      setImageUrl(nextUrl);
+      if (cloudMode) {
+        const generatedFile = new File([blob], `generation-${crypto.randomUUID()}.png`, { type: blob.type || "image/png" });
+        const uploaded = await uploadFile(generatedFile, "generations");
+        setImageUrl(uploaded.signedUrl);
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === "string") {
-          saveGeneration({
+        const generationResponse = await fetch("/api/generations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
             id: crypto.randomUUID(),
             characterId: character.id,
             name: character.name || "Unnamed character",
             prompt,
-            imageUrl: reader.result,
-            createdAt: new Date().toISOString(),
-          });
-        }
-      };
-      reader.readAsDataURL(blob);
+            imagePath: uploaded.path,
+          }),
+        });
+        const generationData = await generationResponse.json();
+        if (!generationResponse.ok) throw new Error(generationData?.error || "Could not save generation.");
+        setGenerations((current) => [generationData.generation, ...current].slice(0, 100));
+      } else {
+        const nextUrl = URL.createObjectURL(blob);
+        setImageUrl(nextUrl);
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === "string") {
+            saveGenerationLocal({
+              id: crypto.randomUUID(),
+              characterId: character.id,
+              name: character.name || "Unnamed character",
+              prompt,
+              imageUrl: reader.result,
+              createdAt: new Date().toISOString(),
+            });
+          }
+        };
+        reader.readAsDataURL(blob);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Generation failed.");
     } finally {
@@ -141,10 +248,18 @@ export default function Home() {
     setCharacter(item);
     setImageUrl("");
     setReference(null);
+    setReferencePath((item as Character & { referenceImagePath?: string }).referenceImagePath || "");
     setSaved(true);
   };
 
+  const signOut = async () => {
+    const supabase = createSupabaseBrowserClient();
+    if (supabase) await supabase.auth.signOut();
+    window.location.href = "/auth";
+  };
+
   const currentGenerations = generations.filter((item) => item.characterId === character.id);
+  const displayReference = reference ? URL.createObjectURL(reference) : character.referenceImage;
 
   return (
     <main className="shell">
@@ -154,13 +269,17 @@ export default function Home() {
           <h1>Create your character</h1>
           <p>Characters, references and generations stay organized in one simple workspace.</p>
         </div>
-        <div className="status">MVP · Character Vault</div>
+        <div className="headerActions">
+          <div className="status">{cloudMode ? "CLOUD · SYNCED" : "LOCAL · BROWSER"}</div>
+          {authChecked && cloudMode && <button className="secondary smallButton" onClick={signOut}>Sign out</button>}
+          {authChecked && !cloudMode && <a className="secondary smallButton" href="/auth">Sign in</a>}
+        </div>
       </header>
 
       <section className="toolbar card">
         <div>
           <strong>Your characters</strong>
-          <div className="vaultHint">Stored locally in this browser for now.</div>
+          <div className="vaultHint">{cloudMode ? "Synced to your account." : "Stored locally in this browser."}</div>
         </div>
         <div className="toolbarActions">
           <select value={character.id} onChange={(e) => {
@@ -184,6 +303,7 @@ export default function Home() {
           <label>Appearance<textarea value={character.appearance} onChange={(e) => update("appearance", e.target.value)} placeholder="Hair, eyes, build, clothing style..." /></label>
           <label>Personality<textarea value={character.personality} onChange={(e) => update("personality", e.target.value)} placeholder="Calm, confident, funny..." /></label>
           <label>Reference image<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setReference(e.target.files?.[0] || null)} /></label>
+          {displayReference && <img className="referencePreview" src={displayReference} alt="Character reference" />}
           {reference && <div className="saved">Reference ready: {reference.name}</div>}
 
           <div className="providerBox">
@@ -206,7 +326,7 @@ export default function Home() {
             </select>
           </div>
 
-          <button className="primary" onClick={saveCharacter}>Save character</button>
+          <button className="primary" onClick={() => void saveCharacter()}>Save character</button>
           {saved && <div className="saved">Character saved.</div>}
         </div>
 
@@ -217,7 +337,7 @@ export default function Home() {
           <p>{character.appearance || "Your generated image will appear here."}</p>
           <div className="tags">{character.age && <span>Age {character.age}</span>}<span>{provider.toUpperCase()}</span>{reference && <span>REFERENCE</span>}</div>
           <div className="promptBox"><small>Generated prompt</small><div>{prompt || "Add appearance and personality details."}</div></div>
-          <button className="secondary" onClick={generate} disabled={generating || !prompt}>{generating ? "Generating image…" : reference ? "Generate from reference" : "Generate image"}</button>
+          <button className="secondary" onClick={() => void generate()} disabled={generating || !prompt}>{generating ? "Generating image…" : reference ? "Generate from reference" : "Generate image"}</button>
           {error && <div className="error">{error}</div>}
         </div>
       </section>

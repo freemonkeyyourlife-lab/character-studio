@@ -17,9 +17,9 @@ export async function generateWithHuggingFace(prompt: string, model?: string) {
   });
 }
 
-export async function editWithHuggingFace(image: Blob, prompt: string) {
+export async function editWithHuggingFace(image: Blob, prompt: string, model?: string) {
   return client().imageTextToImage({
-    model: process.env.HF_EDIT_MODEL || EDIT_MODEL,
+    model: model || process.env.HF_EDIT_MODEL || EDIT_MODEL,
     provider: "auto",
     inputs: { image, prompt },
   });

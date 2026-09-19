@@ -22,6 +22,7 @@ export async function generateWithHuggingFace(prompt: string, model?: string): P
     provider: "auto",
     inputs: prompt,
   }));
+}
 
 export async function editWithHuggingFace(image: Blob, prompt: string, model?: string): Promise<Blob> {
   return client().imageTextToImage({

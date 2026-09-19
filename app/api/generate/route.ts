@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { canUseModel, getProvider } from "@/lib/character";
 import { editWithHuggingFace, generateWithHuggingFace } from "@/lib/providers/huggingface";
 import { replicateProvider } from "@/lib/providers/replicate";
 import { falProvider } from "@/lib/providers/fal";
@@ -6,6 +7,8 @@ import { falProvider } from "@/lib/providers/fal";
 export const runtime = "nodejs";
 
 async function generate(provider: string, prompt: string, model?: string) {
+  if (!getProvider(provider)) throw new Error("Unknown image provider.");
+  if (!model || !canUseModel(provider, model, "text-to-image")) throw new Error("Selected model does not support text-to-image generation.");
   if (provider === "huggingface") return generateWithHuggingFace(prompt, model);
   if (provider === "replicate") return replicateProvider.generate({ prompt, model });
   if (provider === "fal") return falProvider.generate({ prompt, model });
@@ -13,6 +16,8 @@ async function generate(provider: string, prompt: string, model?: string) {
 }
 
 async function edit(provider: string, image: Blob, prompt: string, model?: string) {
+  if (!getProvider(provider)) throw new Error("Unknown image provider.");
+  if (!model || !canUseModel(provider, model, "image-edit")) throw new Error("Selected model does not support reference editing.");
   if (provider === "huggingface") return editWithHuggingFace(image, prompt, model);
   if (provider === "replicate" && replicateProvider.edit) return replicateProvider.edit({ image, prompt, model });
   if (provider === "fal" && falProvider.edit) return falProvider.edit({ image, prompt, model });

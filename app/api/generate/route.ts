@@ -42,6 +42,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Prompt and reference image are required." }, { status: 400 });
       }
 
+      if (prompt.length > 4000) {
+        return NextResponse.json({ error: "Prompt is limited to 4000 characters." }, { status: 400 });
+      }
+
       if (file.size > 8 * 1024 * 1024) {
         return NextResponse.json({ error: "Reference image must be 8 MB or smaller." }, { status: 400 });
       }

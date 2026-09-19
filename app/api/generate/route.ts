@@ -3,6 +3,7 @@ import { canUseModel, getProvider } from "@/lib/character";
 import { editWithHuggingFace, generateWithHuggingFace } from "@/lib/providers/huggingface";
 import { replicateProvider } from "@/lib/providers/replicate";
 import { falProvider } from "@/lib/providers/fal";
+import { comfyuiProvider } from "@/lib/providers/comfyui";
 
 export const runtime = "nodejs";
 
@@ -12,6 +13,7 @@ async function generate(provider: string, prompt: string, model?: string) {
   if (provider === "huggingface") return generateWithHuggingFace(prompt, model);
   if (provider === "replicate") return replicateProvider.generate({ prompt, model });
   if (provider === "fal") return falProvider.generate({ prompt, model });
+  if (provider === "comfyui") return comfyuiProvider.generate({ prompt, model });
   throw new Error("Provider is not connected.");
 }
 
@@ -21,6 +23,7 @@ async function edit(provider: string, image: Blob, prompt: string, model?: strin
   if (provider === "huggingface") return editWithHuggingFace(image, prompt, model);
   if (provider === "replicate" && replicateProvider.edit) return replicateProvider.edit({ image, prompt, model });
   if (provider === "fal" && falProvider.edit) return falProvider.edit({ image, prompt, model });
+  if (provider === "comfyui" && comfyuiProvider.edit) return comfyuiProvider.edit({ image, prompt, model });
   throw new Error("Reference editing is not available for this provider.");
 }
 

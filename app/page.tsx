@@ -466,6 +466,40 @@ export default function Home() {
     URL.revokeObjectURL(url);
   };
 
+  const deleteGeneration = async (item: SavedGeneration) => {
+    if (!window.confirm("Delete this saved generation?")) return;
+    setError("");
+    try {
+      if (cloudMode) {
+        const response = await fetch(`/api/generations/${item.id}`, { method: "DELETE" });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error || "Could not delete generation.");
+      }
+      const updated = generations.filter((generation) => generation.id !== item.id);
+      setGenerations(updated);
+      if (!cloudMode) localStorage.setItem(GENERATION_KEY, JSON.stringify(updated));
+      if (imageUrl === item.imageUrl) setImageUrl("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete generation.");
+    }
+  };
+
+  const downloadGeneration = async (item: SavedGeneration) => {
+    try {
+      const response = await fetch(item.imageUrl);
+      if (!response.ok) throw new Error("Image could not be downloaded.");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = (item.name || "generation").replace(/[^a-z0-9_-]+/gi, "-").toLowerCase() + ".png";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not download generation.");
+    }
+  };
+
   const signOut = async () => {
     const supabase = createSupabaseBrowserClient();
     if (supabase) await supabase.auth.signOut();
@@ -646,9 +680,15 @@ export default function Home() {
         </div>
         {currentGenerations.length === 0 ? <div className="emptyVault">No generations for this character yet.</div> : (
           <div className="vaultGrid">{currentGenerations.map((item) => (
-            <button className="vaultItem" key={item.id} onClick={() => setImageUrl(item.imageUrl)}>
-              <img src={item.imageUrl} alt={item.name} /><strong>{item.name}</strong><span>{new Date(item.createdAt).toLocaleString()}</span>
-            </button>
+            <div className="vaultItem" key={item.id}>
+              <button className="vaultPreviewButton" onClick={() => setImageUrl(item.imageUrl)} aria-label={`Open ${item.name}`}>
+                <img src={item.imageUrl} alt={item.name} /><strong>{item.name}</strong><span>{new Date(item.createdAt).toLocaleString()}</span>
+              </button>
+              <div className="vaultItemActions">
+                <button className="secondary smallButton" onClick={() => void downloadGeneration(item)}>Download</button>
+                <button className="secondary smallButton" onClick={() => void deleteGeneration(item)}>Delete</button>
+              </div>
+            </div>
           ))}</div>
         )}
       </section>

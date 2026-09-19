@@ -9,7 +9,9 @@ export async function updateSupabaseSession(request: NextRequest) {
   let response = NextResponse.next({ request });
   const supabase = createServerClient(url, key, {
     cookies: {
-      getAll() { return request.cookies.getAll(); },
+      getAll() {
+        return request.cookies.getAll();
+      },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         response = NextResponse.next({ request });
@@ -17,6 +19,7 @@ export async function updateSupabaseSession(request: NextRequest) {
       },
     },
   });
+
   await supabase.auth.getClaims();
   return response;
 }

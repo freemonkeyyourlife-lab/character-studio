@@ -436,10 +436,10 @@ export default function Home() {
 
       const imported: Character = {
         id: crypto.randomUUID(),
-        name: data.character.name || "Imported character",
-        age: data.character.age || "",
-        appearance: data.character.appearance || "",
-        personality: data.character.personality || "",
+        name: String(data.character.name || "Imported character").slice(0, 120),
+        age: String(data.character.age || "").slice(0, 40),
+        appearance: String(data.character.appearance || "").slice(0, 4000),
+        personality: String(data.character.personality || "").slice(0, 4000),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

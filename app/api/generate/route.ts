@@ -27,6 +27,17 @@ async function edit(provider: string, image: Blob, prompt: string, model?: strin
   throw new Error("Reference editing is not available for this provider.");
 }
 
+function selectionError(provider: string, model: string | undefined, capability: "text-to-image" | "image-edit") {
+  if (!getProvider(provider)) return "Unknown image provider.";
+  if (!model) return capability === "image-edit" ? "Model is required for reference editing." : "Model is required.";
+  if (!canUseModel(provider, model, capability)) {
+    return capability === "image-edit"
+      ? "Selected model does not support reference editing."
+      : "Selected model does not support text-to-image generation.";
+  }
+  return null;
+}
+
 export async function POST(request: Request) {
   try {
     const contentType = request.headers.get("content-type") || "";
@@ -35,7 +46,7 @@ export async function POST(request: Request) {
       const form = await request.formData();
       const prompt = String(form.get("prompt") || "").trim();
       const model = String(form.get("model") || "").trim();
-      const provider = String(form.get("provider") || "huggingface");
+      const provider = String(form.get("provider") || "huggingface").trim();
       const file = form.get("reference");
 
       if (!prompt || !(file instanceof File)) {
@@ -53,12 +64,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Reference image must be PNG, JPEG or WebP." }, { status: 400 });
       }
 
-      if (!getProvider(provider)) {
-        return NextResponse.json({ error: "Unknown image provider." }, { status: 400 });
-      }
-      if (!model) {
-        return NextResponse.json({ error: "Model is required for reference editing." }, { status: 400 });
-      }
+      const selection = selectionError(provider, model, "image-edit");
+      if (selection) return NextResponse.json({ error: selection }, { status: 400 });
 
       const image = await edit(provider, file, prompt, model);
       const bytes = Buffer.from(await image.arrayBuffer());
@@ -73,12 +80,13 @@ export async function POST(request: Request) {
 
     const provider = body.provider?.trim() || "huggingface";
     const model = body.model?.trim();
-    if (!getProvider(provider)) return NextResponse.json({ error: "Unknown image provider." }, { status: 400 });
-    if (!model) return NextResponse.json({ error: "Model is required." }, { status: 400 });
 
     if (body.prompt.trim().length > 4000) {
       return NextResponse.json({ error: "Prompt is limited to 4000 characters." }, { status: 400 });
     }
+
+    const selection = selectionError(provider, model, "text-to-image");
+    if (selection) return NextResponse.json({ error: selection }, { status: 400 });
 
     const image = await generate(provider, body.prompt.trim(), model);
     const bytes = Buffer.from(await image.arrayBuffer());

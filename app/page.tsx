@@ -44,6 +44,7 @@ export default function Home() {
   const [authEmail, setAuthEmail] = useState("");
   const [migrationAvailable, setMigrationAvailable] = useState(false);
   const [migrating, setMigrating] = useState(false);
+  const [providerStatus, setProviderStatus] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +98,12 @@ export default function Home() {
     };
 
     load();
+    fetch("/api/health", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (!cancelled && data?.providers) setProviderStatus(data.providers);
+      })
+      .catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
@@ -449,7 +456,7 @@ export default function Home() {
             }}>
               {imageProviders.map((item) => (
                 <option key={item.id} value={item.id} disabled={item.status !== "ready"}>
-                  {item.name}{item.status === "planned" ? " · planned" : ""}
+                  {item.name}{item.status === "planned" ? " · planned" : providerStatus[item.id] === false ? " · not configured" : ""}
                 </option>
               ))}
             </select>

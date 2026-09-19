@@ -182,6 +182,9 @@ export default function Home() {
   };
 
   const uploadFile = async (file: File, folder: string) => {
+    if (!file.type.startsWith("image/")) throw new Error("Please select an image file.");
+    if (file.size > 8 * 1024 * 1024) throw new Error("Image must be 8 MB or smaller.");
+
     const form = new FormData();
     form.append("file", file);
     form.append("folder", folder);

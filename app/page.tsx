@@ -48,6 +48,7 @@ export default function Home() {
   const [characterSearch, setCharacterSearch] = useState("");
   const [vaultSearch, setVaultSearch] = useState("");
   const [characterSort, setCharacterSort] = useState<"updated" | "name">("updated");
+  const [importingCharacter, setImportingCharacter] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -393,6 +394,52 @@ export default function Home() {
     setSaved(true);
   };
 
+  const importCharacter = async (file: File) => {
+    setImportingCharacter(true);
+    setError("");
+    try {
+      const data = JSON.parse(await file.text()) as {
+        character?: Partial<Character>;
+      };
+      if (!data.character?.name && !data.character?.appearance) {
+        throw new Error("The selected file does not contain a valid character.");
+      }
+
+      const imported: Character = {
+        id: crypto.randomUUID(),
+        name: data.character.name || "Imported character",
+        age: data.character.age || "",
+        appearance: data.character.appearance || "",
+        personality: data.character.personality || "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (cloudMode) {
+        const response = await fetch("/api/characters", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...imported, referenceImagePath: null }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result?.error || "Could not import character.");
+        setCharacters((current) => [result.character, ...current]);
+        setCharacter(result.character);
+        setSaved(true);
+      } else {
+        const updated = [imported, ...characters];
+        setCharacters(updated);
+        localStorage.setItem(CHARACTER_KEY, JSON.stringify(updated));
+        setCharacter(imported);
+        setSaved(true);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Character import failed.");
+    } finally {
+      setImportingCharacter(false);
+    }
+  };
+
   const exportCharacter = () => {
     const payload = {
       character: {
@@ -515,7 +562,15 @@ export default function Home() {
           </select>
           <button className="secondary smallButton" onClick={newCharacter}>New character</button>
           {characters.some((item) => item.id === character.id) && <button className="secondary smallButton" onClick={() => void duplicateCharacter()}>Duplicate</button>
-          {characters.some((item) => item.id === character.id) && <button className="secondary smallButton" onClick={exportCharacter}>Export JSON</button>}
+          {characters.some((item) => item.id === character.id) && <button className="secondary smallButton" onClick={exportCharacter}>Export JSON</button>
+          <label className="secondary smallButton" style={{ cursor: importingCharacter ? "wait" : "pointer" }}>
+            {importingCharacter ? "Importing…" : "Import JSON"}
+            <input type="file" accept="application/json,.json" hidden disabled={importingCharacter} onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void importCharacter(file);
+              e.currentTarget.value = "";
+            }} />
+          </label>}
         </div>
       </section>
 

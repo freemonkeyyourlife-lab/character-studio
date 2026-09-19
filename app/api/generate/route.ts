@@ -42,6 +42,13 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Prompt and reference image are required." }, { status: 400 });
       }
 
+      if (file.size > 8 * 1024 * 1024) {
+        return NextResponse.json({ error: "Reference image must be 8 MB or smaller." }, { status: 400 });
+      }
+      if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
+        return NextResponse.json({ error: "Reference image must be PNG, JPEG or WebP." }, { status: 400 });
+      }
+
       const image = await edit(provider, file, prompt, model || undefined);
       const bytes = Buffer.from(await image.arrayBuffer());
       return new Response(bytes, {
@@ -52,6 +59,10 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as { prompt?: string; provider?: string; model?: string };
     if (!body.prompt?.trim()) return NextResponse.json({ error: "Prompt is required." }, { status: 400 });
+
+    if (body.prompt.trim().length > 4000) {
+      return NextResponse.json({ error: "Prompt is limited to 4000 characters." }, { status: 400 });
+    }
 
     const image = await generate(body.provider || "huggingface", body.prompt.trim(), body.model);
     const bytes = Buffer.from(await image.arrayBuffer());

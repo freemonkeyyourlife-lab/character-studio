@@ -454,9 +454,11 @@ export default function Home() {
               ))}
             </select>
             <select value={model} onChange={(e) => setModel(e.target.value)} disabled={selectedProvider.models.length === 0}>
-              {selectedProvider.models.map((item) => (
-                <option key={item.id} value={item.id}>{item.name}</option>
-              ))}
+              {selectedProvider.models
+                .filter((item) => reference ? item.capabilities.includes("image-edit") : item.capabilities.includes("text-to-image"))
+                .map((item) => (
+                  <option key={item.id} value={item.id}>{item.name}</option>
+                ))}
             </select>
           </div>
 

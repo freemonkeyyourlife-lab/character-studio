@@ -47,6 +47,7 @@ export default function Home() {
   const [providerStatus, setProviderStatus] = useState<Record<string, boolean>>({});
   const [characterSearch, setCharacterSearch] = useState("");
   const [vaultSearch, setVaultSearch] = useState("");
+  const [characterSort, setCharacterSort] = useState<"updated" | "name">("updated");
 
   useEffect(() => {
     let cancelled = false;
@@ -435,10 +436,15 @@ export default function Home() {
       const query = vaultSearch.trim().toLowerCase();
       return !query || item.name.toLowerCase().includes(query) || item.prompt.toLowerCase().includes(query);
     });
-  const filteredCharacters = characters.filter((item) => {
+  const filteredCharacters = [...characters].filter((item) => {
     const query = characterSearch.trim().toLowerCase();
     return !query || item.name.toLowerCase().includes(query) || item.appearance.toLowerCase().includes(query) || item.personality.toLowerCase().includes(query);
   });
+  const sortedCharacters = filteredCharacters.sort((a, b) =>
+    characterSort === "name"
+      ? a.name.localeCompare(b.name)
+      : b.updatedAt.localeCompare(a.updatedAt)
+  );
   const displayReference = character.referenceImage || "";
 
   return (
@@ -468,12 +474,16 @@ export default function Home() {
         </div>
         <div className="toolbarActions">
           <input className="smallInput" value={characterSearch} onChange={(e) => setCharacterSearch(e.target.value)} placeholder="Search characters…" />
+          <select value={characterSort} onChange={(e) => setCharacterSort(e.target.value as "updated" | "name")}>
+            <option value="updated">Recently updated</option>
+            <option value="name">Name A–Z</option>
+          </select>
           <select value={character.id} onChange={(e) => {
             const selected = characters.find((item) => item.id === e.target.value);
             if (selected) selectCharacter(selected);
           }}>
             <option value={character.id}>{character.name || "New character"}</option>
-            {filteredCharacters.filter((item) => item.id !== character.id).map((item) => (
+            {sortedCharacters.filter((item) => item.id !== character.id).map((item) => (
               <option key={item.id} value={item.id}>{item.name || "Unnamed character"}</option>
             ))}
           </select>

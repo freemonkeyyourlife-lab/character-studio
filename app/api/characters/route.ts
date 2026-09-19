@@ -27,19 +27,27 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const characters = await Promise.all((data || []).map(async (item) => ({
-    id: item.id,
-    name: item.name,
-    age: item.age,
-    appearance: item.appearance,
-    personality: item.personality,
-    referenceImage: item.reference_image_url
-      ? (await supabase.storage.from("character-assets").createSignedUrl(item.reference_image_url, 3600)).data?.signedUrl
-      : undefined,
-    referenceImagePath: item.reference_image_url || undefined,
-    createdAt: item.created_at,
-    updatedAt: item.updated_at,
-  })));
+  const characters = await Promise.all((data || []).map(async (item) => {
+    let referenceImage: string | undefined;
+    if (item.reference_image_url) {
+      const signed = await supabase.storage
+        .from("character-assets")
+        .createSignedUrl(item.reference_image_url, 3600);
+      referenceImage = signed.data?.signedUrl;
+    }
+
+    return {
+      id: item.id,
+      name: item.name,
+      age: item.age,
+      appearance: item.appearance,
+      personality: item.personality,
+      referenceImage,
+      referenceImagePath: item.reference_image_url || undefined,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at,
+    };
+  }));
 
   return NextResponse.json({ characters });
 }

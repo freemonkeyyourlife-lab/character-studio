@@ -98,7 +98,10 @@ export default function Home() {
         const storedCharacters = localStorage.getItem(CHARACTER_KEY);
         const storedGenerations = localStorage.getItem(GENERATION_KEY);
         if (storedCharacters) {
-          const list = JSON.parse(storedCharacters) as Character[];
+          const stored = JSON.parse(storedCharacters) as Character[];
+          const list = stored.map((item) => item.referenceImage?.startsWith("blob:")
+            ? { ...item, referenceImage: undefined }
+            : item);
           setCharacters(list);
           if (list[0]) setCharacter(list[0]);
         }
@@ -167,8 +170,13 @@ export default function Home() {
         setCharacters((current) => [savedCharacter, ...current.filter((item) => item.id !== savedCharacter.id)]);
       } else {
         const updated = [next, ...characters.filter((item) => item.id !== next.id)];
+        const persisted = updated.map((item) => (
+          item.referenceImage?.startsWith("blob:")
+            ? { ...item, referenceImage: undefined }
+            : item
+        ));
         setCharacters(updated);
-        localStorage.setItem(CHARACTER_KEY, JSON.stringify(updated));
+        localStorage.setItem(CHARACTER_KEY, JSON.stringify(persisted));
       }
       setReferencePath(nextPath);
       setSaved(true);

@@ -452,10 +452,18 @@ export default function Home() {
             <select value={provider} onChange={(e) => {
               const next = e.target.value;
               setProvider(next);
-              setModel(imageProviders.find((item) => item.id === next)?.models[0]?.id || "");
+              const nextProvider = imageProviders.find((item) => item.id === next);
+              const compatible = nextProvider?.models.find((item) => reference
+                ? item.capabilities.includes("image-edit")
+                : item.capabilities.includes("text-to-image"));
+              setModel(compatible?.id || "");
             }}>
               {imageProviders.map((item) => (
-                <option key={item.id} value={item.id} disabled={item.status !== "ready"}>
+                <option
+                  key={item.id}
+                  value={item.id}
+                  disabled={item.status !== "ready" || providerStatus[item.id] === false}
+                >
                   {item.name}{item.status === "planned" ? " · planned" : providerStatus[item.id] === false ? " · not configured" : ""}
                 </option>
               ))}

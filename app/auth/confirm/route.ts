@@ -1,14 +1,30 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { type EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const tokenHash = searchParams.get("token_hash");
-  const type = searchParams.get("type") || "email";
-  if (!tokenHash) return NextResponse.redirect(new URL("/auth", request.url));
+  const url = new URL(request.url);
+  const tokenHash = url.searchParams.get("token_hash");
+  const type = url.searchParams.get("type") as EmailOtpType | null;
+  const redirectTo = new URL("/?confirmed=1", request.url);
+
+  if (!tokenHash || !type) {
+    return NextResponse.redirect(new URL("/auth?error=confirmation", request.url));
+  }
+
   const supabase = await createSupabaseServerClient();
-  if (!supabase) return NextResponse.redirect(new URL("/auth", request.url));
-  const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as "email" | "recovery" | "invite" | "email_change" });
-  if (error) return NextResponse.redirect(new URL("/auth?error=confirmation", request.url));
-  return NextResponse.redirect(new URL("/", request.url));
+  if (!supabase) {
+    return NextResponse.redirect(new URL("/auth?error=configuration", request.url));
+  }
+
+  const { error } = await supabase.auth.verifyOtp({
+    token_hash: tokenHash,
+    type,
+  });
+
+  if (error) {
+    return NextResponse.redirect(new URL("/auth?error=confirmation", request.url));
+  }
+
+  return NextResponse.redirect(redirectTo);
 }

@@ -45,6 +45,8 @@ export default function Home() {
   const [migrationAvailable, setMigrationAvailable] = useState(false);
   const [migrating, setMigrating] = useState(false);
   const [providerStatus, setProviderStatus] = useState<Record<string, boolean>>({});
+  const [characterSearch, setCharacterSearch] = useState("");
+  const [vaultSearch, setVaultSearch] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -394,7 +396,16 @@ export default function Home() {
     }
   };
 
-  const currentGenerations = generations.filter((item) => item.characterId === character.id);
+  const currentGenerations = generations
+    .filter((item) => item.characterId === character.id)
+    .filter((item) => {
+      const query = vaultSearch.trim().toLowerCase();
+      return !query || item.name.toLowerCase().includes(query) || item.prompt.toLowerCase().includes(query);
+    });
+  const filteredCharacters = characters.filter((item) => {
+    const query = characterSearch.trim().toLowerCase();
+    return !query || item.name.toLowerCase().includes(query) || item.appearance.toLowerCase().includes(query) || item.personality.toLowerCase().includes(query);
+  });
   const displayReference = character.referenceImage || "";
 
   return (
@@ -423,12 +434,13 @@ export default function Home() {
           <div className="vaultHint">{cloudMode ? "Synced to your account." : "Stored locally in this browser."}</div>
         </div>
         <div className="toolbarActions">
+          <input className="smallInput" value={characterSearch} onChange={(e) => setCharacterSearch(e.target.value)} placeholder="Search characters…" />
           <select value={character.id} onChange={(e) => {
             const selected = characters.find((item) => item.id === e.target.value);
             if (selected) selectCharacter(selected);
           }}>
             <option value={character.id}>{character.name || "New character"}</option>
-            {characters.filter((item) => item.id !== character.id).map((item) => (
+            {filteredCharacters.filter((item) => item.id !== character.id).map((item) => (
               <option key={item.id} value={item.id}>{item.name || "Unnamed character"}</option>
             ))}
           </select>
@@ -499,7 +511,13 @@ export default function Home() {
       </section>
 
       <section className="vault card">
-        <div className="previewTop"><div><h2>Generation Vault</h2><p className="vaultHint">Saved generations for {character.name || "this character"}.</p></div><span>{currentGenerations.length}</span></div>
+        <div className="previewTop">
+          <div><h2>Generation Vault</h2><p className="vaultHint">Saved generations for {character.name || "this character"}.</p></div>
+          <div className="toolbarActions">
+            <input className="smallInput" value={vaultSearch} onChange={(e) => setVaultSearch(e.target.value)} placeholder="Search generations…" />
+            <span>{currentGenerations.length}</span>
+          </div>
+        </div>
         {currentGenerations.length === 0 ? <div className="emptyVault">No generations for this character yet.</div> : (
           <div className="vaultGrid">{currentGenerations.map((item) => (
             <button className="vaultItem" key={item.id} onClick={() => setImageUrl(item.imageUrl)}>

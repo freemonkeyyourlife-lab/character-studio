@@ -76,6 +76,16 @@ export async function POST(request: Request) {
     updated_at: new Date().toISOString(),
   };
 
+  const { data: existing } = await supabase
+    .from("characters")
+    .select("id, user_id")
+    .eq("id", body.id)
+    .maybeSingle();
+
+  if (existing && existing.user_id !== userId) {
+    return NextResponse.json({ error: "Character id already belongs to another account." }, { status: 409 });
+  }
+
   const { data, error } = await supabase
     .from("characters")
     .upsert(payload, { onConflict: "id" })

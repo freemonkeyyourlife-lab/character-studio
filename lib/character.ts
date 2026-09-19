@@ -10,12 +10,20 @@ export type Character = {
   updatedAt: string;
 };
 
+export type ModelCapability = "text-to-image" | "image-edit";
+
+export type ModelDefinition = {
+  id: string;
+  name: string;
+  capabilities: ModelCapability[];
+};
+
 export type ImageProvider = {
   id: string;
   name: string;
   status: "ready" | "planned";
   description: string;
-  models: { id: string; name: string; kind: "text-to-image" | "image-edit" }[];
+  models: ModelDefinition[];
 };
 
 export const imageProviders: ImageProvider[] = [
@@ -25,8 +33,8 @@ export const imageProviders: ImageProvider[] = [
     status: "ready",
     description: "Inference Providers with FLUX models.",
     models: [
-      { id: "black-forest-labs/FLUX.1-schnell", name: "FLUX.1 schnell", kind: "text-to-image" },
-      { id: "black-forest-labs/FLUX.1-Kontext-dev", name: "FLUX.1 Kontext dev", kind: "image-edit" },
+      { id: "black-forest-labs/FLUX.1-schnell", name: "FLUX.1 schnell", capabilities: ["text-to-image"] },
+      { id: "black-forest-labs/FLUX.1-Kontext-dev", name: "FLUX.1 Kontext dev", capabilities: ["image-edit"] },
     ],
   },
   {
@@ -35,7 +43,7 @@ export const imageProviders: ImageProvider[] = [
     status: "ready",
     description: "Hosted model API adapter. Requires REPLICATE_API_TOKEN.",
     models: [
-      { id: "black-forest-labs/flux-schnell", name: "FLUX schnell", kind: "text-to-image" },
+      { id: "black-forest-labs/flux-schnell", name: "FLUX schnell", capabilities: ["text-to-image"] },
     ],
   },
   {
@@ -44,7 +52,7 @@ export const imageProviders: ImageProvider[] = [
     status: "ready",
     description: "Hosted generative media adapter. Requires FAL_KEY.",
     models: [
-      { id: "fal-ai/flux/schnell", name: "FLUX schnell", kind: "text-to-image" },
+      { id: "fal-ai/flux/schnell", name: "FLUX schnell", capabilities: ["text-to-image"] },
     ],
   },
   {
@@ -55,3 +63,16 @@ export const imageProviders: ImageProvider[] = [
     models: [],
   },
 ];
+
+export function getProvider(providerId: string) {
+  return imageProviders.find((provider) => provider.id === providerId);
+}
+
+export function getModel(providerId: string, modelId?: string) {
+  const provider = getProvider(providerId);
+  return provider?.models.find((model) => model.id === modelId);
+}
+
+export function canUseModel(providerId: string, modelId: string, capability: ModelCapability) {
+  return Boolean(getModel(providerId, modelId)?.capabilities.includes(capability));
+}

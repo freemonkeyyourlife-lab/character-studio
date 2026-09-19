@@ -5,6 +5,7 @@ export type Character = {
   appearance: string;
   personality: string;
   referenceImage?: string;
+  referenceImagePath?: string;
   createdAt: string;
   updatedAt: string;
 };

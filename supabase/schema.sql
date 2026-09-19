@@ -41,6 +41,12 @@ create policy "generations_owner_insert" on public.generations for insert with c
 create policy "generations_owner_delete" on public.generations for delete using (auth.uid() = user_id);
 
 create index if not exists characters_user_id_idx on public.characters(user_id);
+
+create index if not exists generations_created_at_idx
+on public.generations(created_at desc);
+
+create index if not exists characters_updated_at_idx
+on public.characters(updated_at desc);
 create index if not exists generations_user_character_idx on public.generations(user_id, character_id);
 
 -- Private bucket for reference images and generated character images.

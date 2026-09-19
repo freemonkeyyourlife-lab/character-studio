@@ -64,11 +64,16 @@ export async function POST(request: Request) {
     const body = (await request.json()) as { prompt?: string; provider?: string; model?: string };
     if (!body.prompt?.trim()) return NextResponse.json({ error: "Prompt is required." }, { status: 400 });
 
+    const provider = body.provider?.trim() || "huggingface";
+    const model = body.model?.trim();
+    if (!getProvider(provider)) return NextResponse.json({ error: "Unknown image provider." }, { status: 400 });
+    if (!model) return NextResponse.json({ error: "Model is required." }, { status: 400 });
+
     if (body.prompt.trim().length > 4000) {
       return NextResponse.json({ error: "Prompt is limited to 4000 characters." }, { status: 400 });
     }
 
-    const image = await generate(body.provider || "huggingface", body.prompt.trim(), body.model);
+    const image = await generate(provider, body.prompt.trim(), model);
     const bytes = Buffer.from(await image.arrayBuffer());
     return new Response(bytes, {
       status: 200,

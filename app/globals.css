@@ -116,3 +116,25 @@ input:focus, textarea:focus, select:focus { border-color: #7b8494; }
 @media (max-width: 720px) {
   .smallInput { min-width: 0; width: 100%; }
 }
+
+.vaultPreviewButton {
+  display: grid;
+  gap: 7px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.vaultPreviewButton:hover img { opacity: .9; }
+.vaultItemActions {
+  display: flex;
+  gap: 6px;
+}
+.vaultItemActions .smallButton {
+  flex: 1;
+  padding: 9px 10px;
+  font-size: 12px;
+}

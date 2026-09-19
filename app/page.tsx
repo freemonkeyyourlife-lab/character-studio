@@ -321,6 +321,7 @@ export default function Home() {
 
 
   const generate = async () => {
+    if (generating) return;
     setGenerating(true);
     setError("");
 

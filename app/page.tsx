@@ -50,6 +50,7 @@ export default function Home() {
   const [characterSort, setCharacterSort] = useState<"updated" | "name">("updated");
   const [importingCharacter, setImportingCharacter] = useState(false);
   const [downloadingGeneration, setDownloadingGeneration] = useState("");
+  const [savingCharacter, setSavingCharacter] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -143,6 +144,9 @@ export default function Home() {
   };
 
   const saveCharacter = async (pathOverride?: string) => {
+    if (savingCharacter) return false;
+    setSavingCharacter(true);
+    setError("");
     const next = { ...character, updatedAt: new Date().toISOString() };
     const nextPath = pathOverride ?? referencePath;
 
@@ -172,6 +176,8 @@ export default function Home() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save character.");
       return false;
+    } finally {
+      setSavingCharacter(false);
     }
   };
 

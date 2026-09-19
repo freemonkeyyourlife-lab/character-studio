@@ -14,7 +14,9 @@ Simple Next.js app for creating AI character profiles and generating character i
 - Text-to-image with FLUX.1 schnell
 - Reference/image editing with FLUX.1 Kontext dev
 - Generation Vault
-- Health endpoint at `/api/health`
+- Health endpoint at `/api/health` with provider/cloud configuration status
+- ComfyUI HTTP adapter for local/self-hosted workflows
+- Server-side validation for image uploads and generation prompts
 
 ## Setup
 
@@ -24,6 +26,14 @@ Create a local `.env.local`:
 HF_TOKEN=your_huggingface_token
 HF_IMAGE_MODEL=black-forest-labs/FLUX.1-schnell
 HF_EDIT_MODEL=black-forest-labs/FLUX.1-Kontext-dev
+
+# Optional providers
+REPLICATE_API_TOKEN=your_replicate_token
+FAL_KEY=your_fal_key
+
+# Optional local/self-hosted ComfyUI
+COMFYUI_URL=http://127.0.0.1:8188
+COMFYUI_CHECKPOINT=your_checkpoint_filename
 
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key

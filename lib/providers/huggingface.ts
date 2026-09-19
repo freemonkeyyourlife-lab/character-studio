@@ -9,12 +9,19 @@ function client() {
   return new InferenceClient(token);
 }
 
+async function toBlob(value: Blob | string): Promise<Blob> {
+  if (value instanceof Blob) return value;
+  const response = await fetch(value);
+  if (!response.ok) throw new Error("Hugging Face returned an unreadable image.");
+  return response.blob();
+}
+
 export async function generateWithHuggingFace(prompt: string, model?: string): Promise<Blob> {
-  return client().textToImage({
+  return toBlob(client().textToImage({
     model: model || process.env.HF_IMAGE_MODEL || DEFAULT_MODEL,
     provider: "auto",
     inputs: prompt,
-  });
+  }));
 }
 
 export async function editWithHuggingFace(image: Blob, prompt: string, model?: string): Promise<Blob> {

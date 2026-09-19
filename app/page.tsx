@@ -41,6 +41,7 @@ export default function Home() {
   const [referencePath, setReferencePath] = useState("");
   const [cloudMode, setCloudMode] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [authEmail, setAuthEmail] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -56,6 +57,11 @@ export default function Home() {
 
           if (cancelled) return;
           setCloudMode(true);
+          try {
+            const supabase = createSupabaseBrowserClient();
+            const session = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+            setAuthEmail(session.data.session?.user.email || "");
+          } catch {}
           setCharacters(cloudCharacters);
           setGenerations(generationData.generations || []);
           if (cloudCharacters[0]) {
@@ -270,7 +276,7 @@ export default function Home() {
           <p>Characters, references and generations stay organized in one simple workspace.</p>
         </div>
         <div className="headerActions">
-          <div className="status">{cloudMode ? "CLOUD · SYNCED" : "LOCAL · BROWSER"}</div>
+          <div className="status">{cloudMode ? `CLOUD · SYNCED${authEmail ? ` · ${authEmail}` : ""}` : "LOCAL · BROWSER"}</div>
           {authChecked && cloudMode && <button className="secondary smallButton" onClick={signOut}>Sign out</button>}
           {authChecked && !cloudMode && <a className="secondary smallButton" href="/auth">Sign in</a>}
         </div>

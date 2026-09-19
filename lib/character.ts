@@ -32,16 +32,20 @@ export const imageProviders: ImageProvider[] = [
   {
     id: "replicate",
     name: "Replicate",
-    status: "planned",
-    description: "Hosted model API adapter.",
-    models: [],
+    status: "ready",
+    description: "Hosted model API adapter. Requires REPLICATE_API_TOKEN.",
+    models: [
+      { id: "black-forest-labs/flux-schnell", name: "FLUX schnell", kind: "text-to-image" },
+    ],
   },
   {
     id: "fal",
     name: "fal",
-    status: "planned",
-    description: "Hosted generative media adapter.",
-    models: [],
+    status: "ready",
+    description: "Hosted generative media adapter. Requires FAL_KEY.",
+    models: [
+      { id: "fal-ai/flux/schnell", name: "FLUX schnell", kind: "text-to-image" },
+    ],
   },
   {
     id: "comfyui",

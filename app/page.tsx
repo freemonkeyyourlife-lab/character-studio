@@ -561,8 +561,8 @@ export default function Home() {
             ))}
           </select>
           <button className="secondary smallButton" onClick={newCharacter}>New character</button>
-          {characters.some((item) => item.id === character.id) && <button className="secondary smallButton" onClick={() => void duplicateCharacter()}>Duplicate</button>
-          {characters.some((item) => item.id === character.id) && <button className="secondary smallButton" onClick={exportCharacter}>Export JSON</button>
+          {characters.some((item) => item.id === character.id) && <button className="secondary smallButton" onClick={() => void duplicateCharacter()}>Duplicate</button>}
+          {characters.some((item) => item.id === character.id) && <button className="secondary smallButton" onClick={exportCharacter}>Export JSON</button>}
           <label className="secondary smallButton" style={{ cursor: importingCharacter ? "wait" : "pointer" }}>
             {importingCharacter ? "Importing…" : "Import JSON"}
             <input type="file" accept="application/json,.json" hidden disabled={importingCharacter} onChange={(e) => {

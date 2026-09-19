@@ -9,9 +9,9 @@ function client() {
   return new InferenceClient(token);
 }
 
-export async function generateWithHuggingFace(prompt: string) {
+export async function generateWithHuggingFace(prompt: string, model?: string) {
   return client().textToImage({
-    model: process.env.HF_IMAGE_MODEL || DEFAULT_MODEL,
+    model: model || process.env.HF_IMAGE_MODEL || DEFAULT_MODEL,
     provider: "auto",
     inputs: prompt,
   });

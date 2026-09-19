@@ -17,12 +17,11 @@ async function toBlob(value: Blob | string): Promise<Blob> {
 }
 
 export async function generateWithHuggingFace(prompt: string, model?: string): Promise<Blob> {
-  return toBlob(client().textToImage({
+  return toBlob(await client().textToImage({
     model: model || process.env.HF_IMAGE_MODEL || DEFAULT_MODEL,
     provider: "auto",
     inputs: prompt,
   }));
-}
 
 export async function editWithHuggingFace(image: Blob, prompt: string, model?: string): Promise<Blob> {
   return client().imageTextToImage({

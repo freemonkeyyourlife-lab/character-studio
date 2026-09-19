@@ -52,3 +52,17 @@ input:focus, textarea:focus, select:focus { border-color: #7b8494; }
   .grid { grid-template-columns: 1fr; }
   .preview { min-height: auto; }
 }
+
+
+.vault { margin-top: 18px; }
+.vaultHint { margin: 4px 0 0 !important; font-size: 12px; color: #8a919d !important; }
+.emptyVault { padding: 28px; border: 1px dashed #d9dde3; border-radius: 12px; color: #8a919d; text-align: center; font-size: 13px; }
+.vaultGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+.vaultItem { display: grid; gap: 7px; text-align: left; border: 1px solid #e1e4e8; background: #fff; padding: 8px; border-radius: 12px; cursor: pointer; }
+.vaultItem:hover { border-color: #aeb5bf; }
+.vaultItem img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
+.vaultItem strong { padding: 0 3px; font-size: 13px; }
+.vaultItem span { padding: 0 3px; color: #8a919d; font-size: 10px; }
+@media (max-width: 760px) {
+  .vaultGrid { grid-template-columns: 1fr; }
+}

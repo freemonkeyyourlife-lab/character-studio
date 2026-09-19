@@ -66,3 +66,13 @@ input:focus, textarea:focus, select:focus { border-color: #7b8494; }
 @media (max-width: 760px) {
   .vaultGrid { grid-template-columns: 1fr; }
 }
+
+.toolbar { margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.toolbarActions { display: flex; gap: 8px; align-items: center; min-width: min(100%, 430px); }
+.toolbarActions select { min-width: 210px; }
+.smallButton { width: auto; white-space: nowrap; }
+@media (max-width: 760px) {
+  .toolbar { align-items: stretch; flex-direction: column; }
+  .toolbarActions { flex-direction: column; }
+  .toolbarActions select, .smallButton { width: 100%; }
+}

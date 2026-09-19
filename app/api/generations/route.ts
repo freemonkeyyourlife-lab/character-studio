@@ -64,7 +64,7 @@ export async function POST(request: Request) {
 
   const { data: row, error } = await supabase
     .from("generations")
-    .insert({
+    .upsert({
       id: body.id,
       user_id: userId,
       character_id: body.characterId,
@@ -72,6 +72,7 @@ export async function POST(request: Request) {
       prompt: body.prompt,
       image_url: body.imagePath,
     })
+    }, { onConflict: "id" })
     .select("*")
     .single();
 

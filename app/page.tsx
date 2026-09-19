@@ -235,8 +235,6 @@ export default function Home() {
     }
   };
 
-
-
   const saveGenerationLocal = (item: SavedGeneration) => {
     const updated = [item, ...generations].slice(0, 12);
     setGenerations(updated);
@@ -322,7 +320,6 @@ export default function Home() {
       setMigrating(false);
     }
   };
-
 
   const generate = async () => {
     if (generating) return;
@@ -637,7 +634,7 @@ export default function Home() {
               if (file) void importCharacter(file);
               e.currentTarget.value = "";
             }} />
-          </label>}
+          </label>
         </div>
       </section>
 

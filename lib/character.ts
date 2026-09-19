@@ -13,6 +13,12 @@ export type ImageProvider = {
 };
 
 export const imageProviders: ImageProvider[] = [
-  { id: "flux", name: "FLUX", status: "planned", description: "Photorealistic image generation adapter." },
+  {
+    id: "huggingface",
+    name: "Hugging Face · FLUX",
+    status: "ready",
+    description: "FLUX.1-schnell through Hugging Face Inference Providers.",
+  },
+  { id: "flux", name: "FLUX direct", status: "planned", description: "Direct FLUX provider adapter." },
   { id: "sdxl", name: "SDXL", status: "planned", description: "Flexible image generation adapter." }
 ];

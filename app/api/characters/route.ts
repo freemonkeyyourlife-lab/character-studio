@@ -68,6 +68,11 @@ export async function POST(request: Request) {
 
   if (!body.id) return NextResponse.json({ error: "Character id is required." }, { status: 400 });
 
+  if (body.name && body.name.length > 120) return NextResponse.json({ error: "Character name is limited to 120 characters." }, { status: 400 });
+  if (body.age && body.age.length > 40) return NextResponse.json({ error: "Age is limited to 40 characters." }, { status: 400 });
+  if (body.appearance && body.appearance.length > 4000) return NextResponse.json({ error: "Appearance is limited to 4000 characters." }, { status: 400 });
+  if (body.personality && body.personality.length > 4000) return NextResponse.json({ error: "Personality is limited to 4000 characters." }, { status: 400 });
+
   const requestedPath = body.referenceImagePath || null;
   if (requestedPath && !requestedPath.startsWith(userId + "/")) {
     return NextResponse.json({ error: "Reference image does not belong to this account." }, { status: 403 });

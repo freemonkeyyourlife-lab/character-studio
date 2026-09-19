@@ -182,7 +182,8 @@ export default function Home() {
   };
 
   const uploadFile = async (file: File, folder: string) => {
-    if (!file.type.startsWith("image/")) throw new Error("Please select an image file.");
+    const allowedTypes = new Set(["image/png", "image/jpeg", "image/webp"]);
+    if (!allowedTypes.has(file.type)) throw new Error("Only PNG, JPEG and WebP images are supported.");
     if (file.size > 8 * 1024 * 1024) throw new Error("Image must be 8 MB or smaller.");
 
     const form = new FormData();

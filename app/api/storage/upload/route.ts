@@ -39,7 +39,10 @@ export async function POST(request: Request) {
     .from(BUCKET)
     .createSignedUrl(path, 3600);
 
-  if (signedError) return NextResponse.json({ error: signedError.message }, { status: 500 });
+  if (signedError) {
+    await supabase.storage.from(BUCKET).remove([path]);
+    return NextResponse.json({ error: signedError.message }, { status: 500 });
+  }
 
   return NextResponse.json({ path, signedUrl: signed.signedUrl });
 }

@@ -78,8 +78,10 @@ export default function Home() {
             setCharacter(cloudCharacters[0]);
             setReferencePath((cloudCharacters[0] as Character & { referenceImagePath?: string }).referenceImagePath || "");
           }
-        } else {
+        } else if (response.status === 401 || response.status === 503) {
           loadLocal();
+        } else {
+          throw new Error("Cloud data could not be loaded.");
         }
       } catch {
         loadLocal();

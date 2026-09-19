@@ -514,7 +514,22 @@ export default function Home() {
     setDownloadingGeneration(item.id);
     setError("");
     try {
-      const response = await fetch(item.imageUrl);
+      let imageUrlToDownload = item.imageUrl;
+
+      if (cloudMode && item.imagePath) {
+        const signedResponse = await fetch("/api/storage/signed-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: item.imagePath }),
+        });
+        const signedData = await signedResponse.json();
+        if (!signedResponse.ok || !signedData?.url) {
+          throw new Error(signedData?.error || "Could not refresh image access.");
+        }
+        imageUrlToDownload = signedData.url;
+      }
+
+      const response = await fetch(imageUrlToDownload);
       if (!response.ok) throw new Error("Image could not be downloaded.");
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);

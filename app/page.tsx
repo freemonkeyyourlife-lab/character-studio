@@ -264,6 +264,37 @@ export default function Home() {
     window.location.href = "/auth";
   };
 
+  const deleteCharacter = async () => {
+    if (!character.id || !window.confirm("Delete this character and its saved generations?")) return;
+
+    setError("");
+    try {
+      if (cloudMode) {
+        const response = await fetch(`/api/characters/${character.id}`, { method: "DELETE" });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data?.error || "Could not delete character.");
+      } else {
+        const next = characters.filter((item) => item.id !== character.id);
+        setCharacters(next);
+        localStorage.setItem(CHARACTER_KEY, JSON.stringify(next));
+        const nextGenerations = generations.filter((item) => item.characterId !== character.id);
+        setGenerations(nextGenerations);
+        localStorage.setItem(GENERATION_KEY, JSON.stringify(nextGenerations));
+      }
+
+      const remaining = characters.filter((item) => item.id !== character.id);
+      setCharacters(remaining);
+      setGenerations((current) => current.filter((item) => item.characterId !== character.id));
+      if (remaining[0]) {
+        selectCharacter(remaining[0]);
+      } else {
+        newCharacter();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete character.");
+    }
+  };
+
   const currentGenerations = generations.filter((item) => item.characterId === character.id);
   const displayReference = character.referenceImage || "";
 
@@ -332,7 +363,12 @@ export default function Home() {
             </select>
           </div>
 
-          <button className="primary" onClick={() => void saveCharacter()}>Save character</button>
+          <div className="toolbarActions">
+            <button className="primary" onClick={() => void saveCharacter()}>Save character</button>
+            {characters.some((item) => item.id === character.id) && (
+              <button className="secondary smallButton" onClick={() => void deleteCharacter()}>Delete</button>
+            )}
+          </div>
           {saved && <div className="saved">Character saved.</div>}
         </div>
 

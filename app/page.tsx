@@ -123,7 +123,7 @@ export default function Home() {
         const data = await response.json();
         if (!response.ok) throw new Error(data?.error || "Could not save character.");
         const savedCharacter = data.character as Character;
-        setCharacter({ ...next, ...savedCharacter, referenceImagePath: nextPath } as Character);
+        setCharacter({ ...next, ...savedCharacter, referenceImagePath: nextPath, referenceImage: character.referenceImage } as Character);
         setCharacters((current) => [savedCharacter, ...current.filter((item) => item.id !== savedCharacter.id)]);
       } else {
         const updated = [next, ...characters.filter((item) => item.id !== next.id)];
@@ -248,7 +248,7 @@ export default function Home() {
     setCharacter(item);
     setImageUrl("");
     setReference(null);
-    setReferencePath((item as Character & { referenceImagePath?: string }).referenceImagePath || "");
+    setReferencePath(item.referenceImagePath || "");
     setSaved(true);
   };
 
@@ -259,7 +259,7 @@ export default function Home() {
   };
 
   const currentGenerations = generations.filter((item) => item.characterId === character.id);
-  const displayReference = reference ? URL.createObjectURL(reference) : character.referenceImage;
+  const displayReference = character.referenceImage || "";
 
   return (
     <main className="shell">
@@ -302,7 +302,7 @@ export default function Home() {
           <label>Age<input value={character.age} onChange={(e) => update("age", e.target.value)} placeholder="e.g. 28" /></label>
           <label>Appearance<textarea value={character.appearance} onChange={(e) => update("appearance", e.target.value)} placeholder="Hair, eyes, build, clothing style..." /></label>
           <label>Personality<textarea value={character.personality} onChange={(e) => update("personality", e.target.value)} placeholder="Calm, confident, funny..." /></label>
-          <label>Reference image<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setReference(e.target.files?.[0] || null)} /></label>
+          <label>Reference image<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => { const file = e.target.files?.[0] || null; setReference(file); if (file) setCharacter((current) => ({ ...current, referenceImage: URL.createObjectURL(file) })); }} /></label>
           {displayReference && <img className="referencePreview" src={displayReference} alt="Character reference" />}
           {reference && <div className="saved">Reference ready: {reference.name}</div>}
 

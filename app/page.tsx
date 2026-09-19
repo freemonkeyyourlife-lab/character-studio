@@ -114,8 +114,13 @@ export default function Home() {
   const selectedProvider = imageProviders.find((item) => item.id === provider) || imageProviders[0];
 
   useEffect(() => {
-    const firstModel = selectedProvider.models.find((item) => reference ? item.capabilities.includes("image-edit") : item.capabilities.includes("text-to-image"));
-    if (firstModel && !selectedProvider.models.some((item) => item.id === model)) setModel(firstModel.id);
+    const capability = reference ? "image-edit" : "text-to-image";
+    const compatible = selectedProvider.models.find((item) => item.capabilities.includes(capability));
+    const currentSupportsMode = selectedProvider.models.some(
+      (item) => item.id === model && item.capabilities.includes(capability)
+    );
+    if (compatible && !currentSupportsMode) setModel(compatible.id);
+    if (!compatible) setModel("");
   }, [selectedProvider, reference, model]);
 
   const prompt = useMemo(

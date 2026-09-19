@@ -203,10 +203,17 @@ export default function Home() {
     return data as { path: string; signedUrl: string };
   };
 
+  const clearImagePreview = () => {
+    setImageUrl((current) => {
+      if (current.startsWith("blob:")) URL.revokeObjectURL(current);
+      return "";
+    });
+  };
+
   const newCharacter = () => {
     if (character.referenceImage?.startsWith("blob:")) URL.revokeObjectURL(character.referenceImage);
     setCharacter(blank());
-    setImageUrl("");
+    clearImagePreview();
     setReference(null);
     setReferencePath("");
     setSaved(false);
@@ -222,7 +229,7 @@ export default function Home() {
       updatedAt: new Date().toISOString(),
     };
     setCharacter(copy);
-    setImageUrl("");
+    clearImagePreview();
     setReference(null);
     setSaved(false);
     setError("");
@@ -397,6 +404,7 @@ export default function Home() {
         setGenerations((current) => [generationData.generation, ...current].slice(0, 100));
       } else {
         const nextUrl = URL.createObjectURL(blob);
+        clearImagePreview();
         setImageUrl(nextUrl);
 
         const reader = new FileReader();
@@ -436,7 +444,7 @@ export default function Home() {
   const selectCharacter = (item: Character) => {
     if (character.referenceImage?.startsWith("blob:")) URL.revokeObjectURL(character.referenceImage);
     setCharacter(item);
-    setImageUrl("");
+    clearImagePreview();
     setReference(null);
     setReferencePath(item.referenceImagePath || "");
     setSaved(true);
@@ -535,7 +543,7 @@ export default function Home() {
       const updated = generations.filter((generation) => generation.id !== item.id);
       setGenerations(updated);
       if (!cloudMode) localStorage.setItem(GENERATION_KEY, JSON.stringify(updated));
-      if (imageUrl === item.imageUrl) setImageUrl("");
+      if (imageUrl === item.imageUrl) clearImagePreview();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not delete generation.");
     }

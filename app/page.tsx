@@ -205,6 +205,7 @@ export default function Home() {
     setError("");
   };
   const duplicateCharacter = async () => {
+    if (character.referenceImage?.startsWith("blob:")) URL.revokeObjectURL(character.referenceImage);
     const copy: Character = {
       ...character,
       id: crypto.randomUUID(),

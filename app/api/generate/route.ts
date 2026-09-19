@@ -17,9 +17,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Prompt and reference image are required." }, { status: 400 });
       }
 
-      const image = await editWithHuggingFace(file, prompt);
+      const image = await editWithHuggingFace(file, prompt, model || undefined);
       const bytes = Buffer.from(await image.arrayBuffer());
-      return new Response(bytes, { status: 200, headers: { "Content-Type": "image/png", "Cache-Control": "no-store" } });
+      return new Response(bytes, {
+        status: 200,
+        headers: { "Content-Type": "image/png", "Cache-Control": "no-store" },
+      });
     }
 
     const body = (await request.json()) as { prompt?: string; provider?: string; model?: string };
@@ -28,7 +31,10 @@ export async function POST(request: Request) {
 
     const image = await generateWithHuggingFace(body.prompt.trim(), body.model);
     const bytes = Buffer.from(await image.arrayBuffer());
-    return new Response(bytes, { status: 200, headers: { "Content-Type": "image/png", "Cache-Control": "no-store" } });
+    return new Response(bytes, {
+      status: 200,
+      headers: { "Content-Type": "image/png", "Cache-Control": "no-store" },
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Image generation failed.";
     return NextResponse.json({ error: message }, { status: 500 });

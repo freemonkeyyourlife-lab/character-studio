@@ -498,9 +498,12 @@ export default function Home() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ path }),
     });
-    const data = await response.json();
-    if (!response.ok || !data?.url) throw new Error(data?.error || "Could not refresh image access.");
-    return data.url as string;
+    const type = response.headers.get("content-type") || "";
+    const data = type.includes("application/json") ? await response.json().catch(() => null) : null;
+    if (!response.ok || typeof data?.url !== "string") {
+      throw new Error(data?.error || "Could not refresh image access.");
+    }
+    return data.url;
   };
 
   const selectCharacter = (item: Character) => {

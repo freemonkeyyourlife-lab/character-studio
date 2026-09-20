@@ -18,6 +18,9 @@ export async function POST(request: Request) {
   const form = await request.formData();
   const file = form.get("file");
   const requestedFolder = String(form.get("folder") || "uploads");
+  if (requestedFolder.length > 100) {
+    return NextResponse.json({ error: "Upload folder is too long." }, { status: 400 });
+  }
   const folder = requestedFolder.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40) || "uploads";
 
   if (!(file instanceof File)) return NextResponse.json({ error: "File is required." }, { status: 400 });

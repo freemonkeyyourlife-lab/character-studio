@@ -349,12 +349,14 @@ export default function Home() {
 
       for (const item of localCharacters) {
         let referenceImagePath = item.referenceImagePath || "";
+        let uploadedReferencePath = "";
         if (!referenceImagePath && item.referenceImage) {
           const response = await fetch(item.referenceImage);
           if (response.ok) {
             const blob = await response.blob();
             const file = new File([blob], `reference-${item.id}.png`, { type: blob.type || "image/png" });
-            referenceImagePath = (await uploadFile(file, "references")).path;
+            uploadedReferencePath = (await uploadFile(file, "references")).path;
+            referenceImagePath = uploadedReferencePath;
           }
         }
 
@@ -370,8 +372,11 @@ export default function Home() {
             referenceImagePath: referenceImagePath || null,
           }),
         });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data?.error || `Could not import ${item.name || "character"}.`);
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+          if (uploadedReferencePath) await deleteUploadedFile(uploadedReferencePath);
+          throw new Error(data?.error || `Could not import ${item.name || "character"}.`);
+        }
       }
 
       for (const item of localGenerations) {
@@ -394,9 +399,15 @@ export default function Home() {
             imagePath: uploaded.path,
           }),
         });
-        const generationData = await generationResponse.json();
-        if (!generationResponse.ok && !String(generationData?.error || "").toLowerCase().includes("duplicate")) {
-          throw new Error(generationData?.error || "Could not import generation.");
+        const generationData = await generationResponse.json().catch(() => null);
+        if (!generationResponse.ok) {
+          const duplicate = String(generationData?.error || "").toLowerCase().includes("duplicate");
+          if (duplicate) {
+            await deleteUploadedFile(uploaded.path);
+          } else {
+            await deleteUploadedFile(uploaded.path);
+            throw new Error(generationData?.error || "Could not import generation.");
+          }
         }
       }
 

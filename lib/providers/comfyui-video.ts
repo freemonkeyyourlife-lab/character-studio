@@ -9,7 +9,7 @@ function baseUrl() {
   if (!value) throw new Error("COMFYUI_URL is not configured.");
   const url = new URL(value);
   if (!["http:", "https:"].includes(url.protocol)) throw new Error("COMFYUI_URL must use HTTP or HTTPS.");
-  return url.toString().replace(/\\/$/, "");
+  return url.toString().replace(/\/$/, "");
 }
 
 function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit, timeoutMs = REQUEST_TIMEOUT_MS) {

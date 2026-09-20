@@ -66,10 +66,18 @@ export async function POST(request: Request) {
     const contentType = request.headers.get("content-type") || "";
 
     if (contentType.includes("multipart/form-data")) {
-      const form = await request.formData();
-      const prompt = String(form.get("prompt") || "").trim();
-      const model = String(form.get("model") || "").trim();
-      const provider = String(form.get("provider") || "huggingface").trim();
+      let form: FormData;
+      try {
+        form = await request.formData();
+      } catch {
+        return NextResponse.json({ error: "Invalid multipart request." }, { status: 400 });
+      }
+      const promptValue = form.get("prompt");
+      const modelValue = form.get("model");
+      const providerValue = form.get("provider");
+      const prompt = typeof promptValue === "string" ? promptValue.trim() : "";
+      const model = typeof modelValue === "string" ? modelValue.trim() : "";
+      const provider = typeof providerValue === "string" ? providerValue.trim() || "huggingface" : "huggingface";
       const file = form.get("reference");
 
       if (!prompt || !(file instanceof File)) {

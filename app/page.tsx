@@ -218,6 +218,7 @@ export default function Home() {
       }
 
       setReferencePath(nextPath);
+      setPendingReferenceDeletion("");
       setSaved(true);
       return true;
     } catch (err) {
@@ -313,6 +314,7 @@ export default function Home() {
       setCharacters((current) => [savedCopy, ...current.filter((item) => item.id !== savedCopy.id)]);
       setReference(null);
       setReferencePath("");
+      setPendingReferenceDeletion("");
       clearImagePreview();
       setSaved(true);
       return;
@@ -321,6 +323,7 @@ export default function Home() {
     setCharacter(copy);
     setReference(null);
     setReferencePath("");
+    setPendingReferenceDeletion("");
     clearImagePreview();
     setSaved(false);
     const updated = [copy, ...characters.filter((item) => item.id !== copy.id)];

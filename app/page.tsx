@@ -521,22 +521,41 @@ export default function Home() {
     setImportingCharacter(true);
     setError("");
     try {
-      const data = JSON.parse(await file.text()) as {
-        character?: Partial<Character>;
-      };
-      if (!data.character?.name && !data.character?.appearance) {
+      const data = JSON.parse(await file.text()) as unknown;
+      if (typeof data !== "object" || data === null || Array.isArray(data)) {
+        throw new Error("The selected file contains invalid export data.");
+      }
+
+      const characterData = (data as { character?: unknown }).character;
+      if (typeof characterData !== "object" || characterData === null || Array.isArray(characterData)) {
+        throw new Error("The selected file contains invalid character data.");
+      }
+
+      const source = characterData as Record<string, unknown>;
+      const stringFields = ["name", "age", "appearance", "personality"] as const;
+      for (const field of stringFields) {
+        if (source[field] !== undefined && typeof source[field] !== "string") {
+          throw new Error("The character field \"" + field + "\" must be text.");
+        }
+      }
+
+      const name = (source.name as string | undefined)?.trim() || "Imported character";
+      const age = (source.age as string | undefined)?.trim() || "";
+      const appearance = (source.appearance as string | undefined)?.trim() || "";
+      const personality = (source.personality as string | undefined)?.trim() || "";
+      if (!appearance && !personality && name === "Imported character") {
         throw new Error("The selected file does not contain a valid character.");
       }
-      if (typeof data.character !== "object" || data.character === null) {
-        throw new Error("The selected file contains invalid character data.");
+      if (name.length > 120 || age.length > 40 || appearance.length > 4000 || personality.length > 4000) {
+        throw new Error("The selected character contains fields that are too long.");
       }
 
       const imported: Character = {
         id: crypto.randomUUID(),
-        name: String(data.character.name || "Imported character").slice(0, 120),
-        age: String(data.character.age || "").slice(0, 40),
-        appearance: String(data.character.appearance || "").slice(0, 4000),
-        personality: String(data.character.personality || "").slice(0, 4000),
+        name,
+        age,
+        appearance,
+        personality,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };

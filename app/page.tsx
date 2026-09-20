@@ -373,12 +373,21 @@ export default function Home() {
     }
     setGenerating(true);
     setError("");
+    let temporaryReferencePath = "";
+    let temporaryGenerationPath = "";
 
     try {
       if (cloudMode && reference) {
         const uploaded = await uploadFile(reference, "references");
+        temporaryReferencePath = uploaded.path;
         setReferencePath(uploaded.path);
-        await saveCharacter(uploaded.path);
+        const characterSaved = await saveCharacter(uploaded.path);
+        if (!characterSaved) {
+          await deleteUploadedFile(uploaded.path);
+          temporaryReferencePath = "";
+          throw new Error("Could not save character.");
+        }
+        temporaryReferencePath = "";
       }
 
       let response: Response;
@@ -417,6 +426,7 @@ export default function Home() {
       if (cloudMode) {
         const generatedFile = new File([blob], `generation-${crypto.randomUUID()}.png`, { type: blob.type || "image/png" });
         const uploaded = await uploadFile(generatedFile, "generations");
+        temporaryGenerationPath = uploaded.path;
         setImageUrl(uploaded.signedUrl);
 
         const generationResponse = await fetch("/api/generations", {
@@ -454,6 +464,8 @@ export default function Home() {
         reader.readAsDataURL(blob);
       }
     } catch (err) {
+      if (temporaryReferencePath) await deleteUploadedFile(temporaryReferencePath);
+      if (temporaryGenerationPath) await deleteUploadedFile(temporaryGenerationPath);
       setError(err instanceof Error ? err.message : "Generation failed.");
     } finally {
       setGenerating(false);

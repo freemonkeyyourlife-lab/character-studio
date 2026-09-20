@@ -57,7 +57,18 @@ export default function Home() {
     if (!supabase) return;
 
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthEmail(session?.user.email || "");
+      const email = session?.user.email || "";
+      setAuthEmail(email);
+      if (!session) {
+        setCloudMode(false);
+        setMigrationAvailable(() => {
+          try {
+            return Boolean(localStorage.getItem(CHARACTER_KEY));
+          } catch {
+            return false;
+          }
+        });
+      }
     });
 
     return () => {

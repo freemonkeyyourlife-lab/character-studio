@@ -107,6 +107,7 @@ export async function POST(request: Request) {
   if (body.personality && body.personality.length > 4000) return NextResponse.json({ error: "Personality is limited to 4000 characters." }, { status: 400 });
 
   const requestedPath = body.referenceImagePath || null;
+  if (requestedPath && requestedPath.length > 500) return NextResponse.json({ error: "Reference image path is too long." }, { status: 400 });
   if (requestedPath && !requestedPath.startsWith(userId + "/")) {
     return NextResponse.json({ error: "Reference image does not belong to this account." }, { status: 403 });
   }

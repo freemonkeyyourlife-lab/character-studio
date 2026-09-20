@@ -835,6 +835,7 @@ export default function Home() {
           <p>Characters, references and generations stay organized in one simple workspace.</p>
         </div>
         <div className="headerActions">
+          <a className="secondary smallButton" href="/video">Video Studio</a>
           <div className="status">{cloudMode ? `CLOUD · SYNCED${authEmail ? ` · ${authEmail}` : ""}` : "LOCAL · BROWSER"}</div>
           {authChecked && cloudMode && <button className="secondary smallButton" onClick={signOut}>Sign out</button>}
           {authChecked && !cloudMode && <a className="secondary smallButton" href="/auth">Sign in</a>}

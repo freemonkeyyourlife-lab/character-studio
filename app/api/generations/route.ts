@@ -91,6 +91,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Prompt is limited to 4000 characters." }, { status: 400 });
   }
 
+  if (body.id.length > 200 || body.characterId.length > 200) {
+    return NextResponse.json({ error: "Generation identifiers are too long." }, { status: 400 });
+  }
+
+  if (body.imagePath.length > 500) {
+    return NextResponse.json({ error: "Generation image path is too long." }, { status: 400 });
+  }
+
   if (!body.imagePath.startsWith(userId + "/")) {
     return NextResponse.json({ error: "Generation image does not belong to this account." }, { status: 403 });
   }

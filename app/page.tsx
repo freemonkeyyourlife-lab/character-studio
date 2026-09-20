@@ -221,8 +221,12 @@ export default function Home() {
     } finally {
       window.clearTimeout(timeout);
     }
-    const data = await response.json();
+    const type = response.headers.get("content-type") || "";
+    const data = type.includes("application/json") ? await response.json().catch(() => null) : null;
     if (!response.ok) throw new Error(data?.error || "Image upload failed.");
+    if (!data || typeof data.path !== "string" || typeof data.signedUrl !== "string") {
+      throw new Error("Image upload returned an invalid response.");
+    }
     return data as { path: string; signedUrl: string };
   };
 

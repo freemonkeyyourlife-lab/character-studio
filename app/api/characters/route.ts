@@ -152,5 +152,5 @@ export async function POST(request: Request) {
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     },
-  });
+  }, { headers: { "Cache-Control": "no-store" } });
 }

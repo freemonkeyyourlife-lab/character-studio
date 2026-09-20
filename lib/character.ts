@@ -44,6 +44,7 @@ export const imageProviders: ImageProvider[] = [
     description: "Hosted model API adapter. Requires REPLICATE_API_TOKEN.",
     models: [
       { id: "black-forest-labs/flux-schnell", name: "FLUX schnell", capabilities: ["text-to-image"] },
+      { id: "black-forest-labs/flux-redux-schnell", name: "FLUX Redux schnell", capabilities: ["image-edit"] },
     ],
   },
   {

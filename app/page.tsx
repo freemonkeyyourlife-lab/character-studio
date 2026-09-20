@@ -276,9 +276,24 @@ export default function Home() {
   };
 
   const saveGenerationLocal = (item: SavedGeneration) => {
-    const updated = [item, ...generations].slice(0, 12);
+    const MAX_LOCAL_GENERATION_CHARS = 1_500_000;
+    let updated = [item, ...generations].slice(0, 12);
+
+    while (updated.length > 1 && JSON.stringify(updated).length > MAX_LOCAL_GENERATION_CHARS) {
+      updated = updated.slice(0, -1);
+    }
+
     setGenerations(updated);
-    localStorage.setItem(GENERATION_KEY, JSON.stringify(updated));
+    try {
+      const serialized = JSON.stringify(updated);
+      if (serialized.length > MAX_LOCAL_GENERATION_CHARS) {
+        setError("The generated image is too large for browser storage. It is available in the current preview but was not saved to the local vault.");
+        return;
+      }
+      localStorage.setItem(GENERATION_KEY, serialized);
+    } catch {
+      setError("Browser storage is full. The image is available in the current preview but was not saved to the local vault.");
+    }
   };
 
   const migrateLocalData = async () => {

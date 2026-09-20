@@ -483,6 +483,8 @@ export default function Home() {
         });
         const generationData = await generationResponse.json();
         if (!generationResponse.ok) throw new Error(generationData?.error || "Could not save generation.");
+        if (!generationData?.generation) throw new Error("Generation save returned an invalid response.");
+        temporaryGenerationPath = "";
         setGenerations((current) => [generationData.generation, ...current].slice(0, 100));
       } else {
         const nextUrl = URL.createObjectURL(blob);

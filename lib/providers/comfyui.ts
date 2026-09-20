@@ -25,7 +25,7 @@ async function prompt(workflow: unknown): Promise<{ prompt_id: string }> {
   if (typeof data?.prompt_id !== "string" || !data.prompt_id) {
     throw new Error("ComfyUI returned an invalid prompt response.");
   }
-  return data;
+  return { prompt_id: data.prompt_id };
 }
 
 async function waitForImage(promptId: string) {

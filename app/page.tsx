@@ -291,29 +291,49 @@ export default function Home() {
       name: character.name ? character.name + " Copy" : "Character Copy",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      referenceImage: undefined,
+      referenceImagePath: undefined,
     };
-    setCharacter(copy);
-    clearImagePreview();
-    setReference(null);
-    setSaved(false);
+
     setError("");
-    setReferencePath("");
-    setCharacters((current) => [copy, ...current.filter((item) => item.id !== copy.id)]);
-    if (!cloudMode) {
-      localStorage.setItem(CHARACTER_KEY, JSON.stringify([copy, ...characters.filter((item) => item.id !== copy.id)]));
-    } else {
+    if (cloudMode) {
       const response = await fetch("/api/characters", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...copy, referenceImagePath: null }),
       });
-      if (!response.ok) {
-        const data = await response.json().catch(() => null);
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.character) {
         setError(data?.error || "Could not duplicate character.");
-      } else {
-        setSaved(true);
+        return;
       }
+      const savedCopy = data.character as Character;
+      setCharacter(savedCopy);
+      setCharacters((current) => [savedCopy, ...current.filter((item) => item.id !== savedCopy.id)]);
+      setReference(null);
+      setReferencePath("");
+      clearImagePreview();
+      setSaved(true);
+      return;
     }
+
+    setCharacter(copy);
+    setReference(null);
+    setReferencePath("");
+    clearImagePreview();
+    setSaved(false);
+    const updated = [copy, ...characters.filter((item) => item.id !== copy.id)];
+    setCharacters(updated);
+    localStorage.setItem(CHARACTER_KEY, JSON.stringify(updated));
+  };
+
+  const removeReference = () => {
+    if (character.referenceImage?.startsWith("blob:")) URL.revokeObjectURL(character.referenceImage);
+    setCharacter((current) => ({ ...current, referenceImage: undefined, updatedAt: new Date().toISOString() }));
+    setReference(null);
+    setReferencePath("");
+    setSaved(false);
+    setError("");
   };
 
   const saveGenerationLocal = (item: SavedGeneration) => {
@@ -861,6 +881,11 @@ export default function Home() {
             />
           )}
           {reference && <div className="saved">Reference ready: {reference.name}</div>}
+          {displayReference && (
+            <button className="secondary smallButton" type="button" onClick={removeReference}>
+              Remove reference
+            </button>
+          )}
 
           <div className="providerBox">
             <div><strong>Image model</strong><span>{selectedProvider.description}</span></div>

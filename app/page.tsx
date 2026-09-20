@@ -217,7 +217,8 @@ export default function Home() {
         localStorage.setItem(CHARACTER_KEY, JSON.stringify(persisted));
       }
 
-      setReferencePath(nextPath);      setPendingReferenceDeletion(null);
+      setReferencePath(nextPath);
+      setPendingReferenceDeletion(null);
       setSaved(true);
       return true;
     } catch (err) {
@@ -281,7 +282,6 @@ export default function Home() {
     clearImagePreview();
     setReference(null);
     setReferencePath("");
-    setPendingReferenceDeletion(null);
     setSaved(false);
     setError("");
   };
@@ -437,12 +437,17 @@ export default function Home() {
             await deleteUploadedFile(uploaded.path);
             throw new Error(generationData?.error || "Could not import generation.");
           }
-        }      }
+        }
+      }
 
       const charactersResponse = await fetch("/api/characters", { cache: "no-store" });
-      const charactersData = await charactersResponse.json();
+      const charactersType = charactersResponse.headers.get("content-type") || "";
+      const charactersData = charactersType.includes("application/json") ? await charactersResponse.json().catch(() => null) : null;
+      if (!charactersResponse.ok || !Array.isArray(charactersData?.characters)) throw new Error("Could not refresh characters after import.");
       const generationsResponse = await fetch("/api/generations", { cache: "no-store" });
-      const generationsData = await generationsResponse.json();
+      const generationsType = generationsResponse.headers.get("content-type") || "";
+      const generationsData = generationsType.includes("application/json") ? await generationsResponse.json().catch(() => null) : null;
+      if (!generationsResponse.ok || !Array.isArray(generationsData?.generations)) throw new Error("Could not refresh generations after import.");
       setCharacters(charactersData.characters || []);
       setGenerations(generationsData.generations || []);
       setMigrationAvailable(false);
@@ -536,9 +541,7 @@ export default function Home() {
           }),
         });
         const generationType = generationResponse.headers.get("content-type") || "";
-        const generationData = generationType.includes("application/json")
-          ? await generationResponse.json().catch(() => null)
-          : null;
+        const generationData = generationType.includes("application/json") ? await generationResponse.json().catch(() => null) : null;
         if (!generationResponse.ok) throw new Error(generationData?.error || "Could not save generation.");
         if (!generationData?.generation) throw new Error("Generation save returned an invalid response.");
         temporaryGenerationPath = "";
@@ -655,11 +658,14 @@ export default function Home() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ...imported, referenceImagePath: null }),
         });
-        const result = await response.json();
+        const type = response.headers.get("content-type") || "";
+        const result = type.includes("application/json") ? await response.json().catch(() => null) : null;
         if (!response.ok) throw new Error(result?.error || "Could not import character.");
-        setCharacters((current) => [result.character, ...current]);
-        setCharacter(result.character);
-        setSaved(true);      } else {
+        if (!result?.character || typeof result.character !== "object") throw new Error("Character import returned an invalid response.");
+        setCharacters((current) => [result.character as Character, ...current]);
+        setCharacter(result.character as Character);
+        setSaved(true);
+      } else {
         const updated = [imported, ...characters];
         setCharacters(updated);
         localStorage.setItem(CHARACTER_KEY, JSON.stringify(updated));
@@ -899,3 +905,124 @@ export default function Home() {
             if (character.referenceImage?.startsWith("blob:")) URL.revokeObjectURL(character.referenceImage);
             setReference(file);
             setError("");
+            setSaved(false);
+            if (file) {
+              setReferencePath("");
+              setPendingReferenceDeletion((current) => current || referencePath);
+              setCharacter((current) => ({ ...current, referenceImage: URL.createObjectURL(file), referenceImagePath: undefined }));
+            }
+            e.currentTarget.value = "";
+          }} /></label>
+          {displayReference && (
+            <img
+              className="referencePreview"
+              src={displayReference}
+              alt="Character reference"
+              onError={async (event) => {
+                if (!cloudMode || !referencePath || event.currentTarget.dataset.refreshed === "1") return;
+                event.currentTarget.dataset.refreshed = "1";
+                try {
+                  const url = await refreshStorageUrl(referencePath);
+                  setCharacter((current) => ({ ...current, referenceImage: url }));
+                } catch {
+                  setError("Character reference could not be refreshed.");
+                }
+              }}
+            />
+          )}
+          {reference && <div className="saved">Reference ready: {reference.name}</div>}
+          {displayReference && (
+            <button className="secondary smallButton" type="button" onClick={removeReference}>
+              Remove reference
+            </button>
+          )}
+
+          <div className="providerBox">
+            <div><strong>Image model</strong><span>{selectedProvider.description}</span></div>
+            <select value={provider} onChange={(e) => {
+              const next = e.target.value;
+              setProvider(next);
+              const nextProvider = imageProviders.find((item) => item.id === next);
+              const compatible = nextProvider?.models.find((item) => reference
+                ? item.capabilities.includes("image-edit")
+                : item.capabilities.includes("text-to-image"));
+              setModel(compatible?.id || "");
+            }}>
+              {imageProviders.map((item) => (
+                <option
+                  key={item.id}
+                  value={item.id}
+                  disabled={item.status !== "ready" || providerStatus[item.id] === false}
+                >
+                  {item.name}{item.status === "planned" ? " · planned" : providerStatus[item.id] === false ? " · not configured" : ""}
+                </option>
+              ))}
+            </select>
+            <select value={model} onChange={(e) => setModel(e.target.value)} disabled={selectedProvider.models.length === 0}>
+              {selectedProvider.models
+                .filter((item) => reference ? item.capabilities.includes("image-edit") : item.capabilities.includes("text-to-image"))
+                .map((item) => (
+                  <option key={item.id} value={item.id}>{item.name}</option>
+                ))}
+            </select>
+          </div>
+
+          <div className="toolbarActions">
+            <button className="primary" onClick={() => void saveCharacter()} disabled={savingCharacter}>{savingCharacter ? "Saving…" : "Save character"}</button>
+            {characters.some((item) => item.id === character.id) && (
+              <button className="secondary smallButton" onClick={() => void deleteCharacter()}>Delete</button>
+            )}
+          </div>
+          {saved && <div className="saved" role="status">Character saved.</div>}
+        </div>
+
+        <div className="card preview">
+          <div className="previewTop"><h2>Preview</h2><span>{generating ? "Generating…" : reference ? "Reference edit" : "Text generation"}</span></div>
+          {imageUrl ? <img className="generatedImage" src={imageUrl} alt={character.name || "Generated character"} /> : <div className="avatar"><span>{character.name ? character.name.slice(0, 1).toUpperCase() : "?"}</span></div>}
+          <h3>{character.name || "Unnamed character"}</h3>
+          <p>{character.appearance || "Your generated image will appear here."}</p>
+          <div className="tags">{character.age && <span>Age {character.age}</span>}<span>{provider.toUpperCase()}</span>{reference && <span>REFERENCE</span>}</div>
+          <div className="promptBox"><small>Generated prompt</small><div>{prompt || "Add appearance and personality details."}</div></div>
+          <button className="secondary" onClick={() => void generate()} disabled={generating || !prompt}>{generating ? "Generating image…" : reference ? "Generate from reference" : "Generate image"}</button>
+          {error && <div className="error" role="alert">{error}</div>}
+        </div>
+      </section>
+
+      <section className="vault card">
+        <div className="previewTop">
+          <div><h2>Generation Vault</h2><p className="vaultHint">Saved generations for {character.name || "this character"}.</p></div>
+          <div className="toolbarActions">
+            <input className="smallInput" value={vaultSearch} onChange={(e) => setVaultSearch(e.target.value)} placeholder="Search generations…" />
+            <span>{currentGenerations.length}</span>
+          </div>
+        </div>
+        {currentGenerations.length === 0 ? <div className="emptyVault">No generations for this character yet.</div> : (
+          <div className="vaultGrid">{currentGenerations.map((item) => (
+            <div className="vaultItem" key={item.id}>
+              <button className="vaultPreviewButton" onClick={() => setImageUrl(item.imageUrl)} aria-label={`Open ${item.name}`}>
+                <img
+                  src={item.imageUrl}
+                  alt={item.name}
+                  onError={async (event) => {
+                    if (!cloudMode || !item.imagePath || event.currentTarget.dataset.refreshed === "1") return;
+                    event.currentTarget.dataset.refreshed = "1";
+                    try {
+                      const url = await refreshStorageUrl(item.imagePath);
+                      setGenerations((current) => current.map((generation) => generation.id === item.id ? { ...generation, imageUrl: url } : generation));
+                    } catch {
+                      setError("Saved generation could not be refreshed.");
+                    }
+                  }}
+                /><strong>{item.name}</strong><span>{new Date(item.createdAt).toLocaleString()}</span>
+              </button>
+              <div className="vaultItemActions">
+                <button className="secondary smallButton" onClick={() => void downloadGeneration(item)} disabled={downloadingGeneration === item.id}>{downloadingGeneration === item.id ? "Downloading…" : "Download"}</button>
+                <button className="secondary smallButton" onClick={() => void deleteGeneration(item)}>Delete</button>
+              </div>
+            </div>
+          ))}</div>
+        )}
+      </section>
+    </main>
+  );
+}

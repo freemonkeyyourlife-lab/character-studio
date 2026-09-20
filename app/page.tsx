@@ -53,6 +53,19 @@ export default function Home() {
   const [savingCharacter, setSavingCharacter] = useState(false);
 
   useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    if (!supabase) return;
+
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthEmail(session?.user.email || "");
+    });
+
+    return () => {
+      data.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
 
     const load = async () => {

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "dev:lan": "next dev --hostname 0.0.0.0"
   },
   "dependencies": {
     "@huggingface/inference": "^4.13.30",

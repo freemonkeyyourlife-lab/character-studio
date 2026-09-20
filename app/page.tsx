@@ -230,6 +230,17 @@ export default function Home() {
     return data as { path: string; signedUrl: string };
   };
 
+  const deleteUploadedFile = async (path: string) => {
+    if (!cloudMode || !path) return;
+    try {
+      await fetch("/api/storage/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path }),
+      });
+    } catch {}
+  };
+
   const clearImagePreview = () => {
     setImageUrl((current) => {
       if (current.startsWith("blob:")) URL.revokeObjectURL(current);

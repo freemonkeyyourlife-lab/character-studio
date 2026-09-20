@@ -11,6 +11,7 @@ Simple Next.js app for creating AI character profiles and generating character i
 - Reference image upload
 - Provider/model selector
 - Hugging Face generation adapter
+- Replicate and fal provider adapters
 - Text-to-image with FLUX.1 schnell
 - Reference/image editing with FLUX.1 Kontext dev
 - Generation Vault
@@ -57,7 +58,7 @@ npm run build
 
 1. Create a Supabase project.
 2. Enable email/password authentication.
-3. Run `supabase/schema.sql` in the Supabase SQL Editor.
+3. Run `supabase/schema.sql` in the Supabase SQL Editor. Re-run it after schema/RLS updates so the owner policies stay current.
 4. Add the Supabase URL and publishable key to `.env.local`.
 5. Open `/auth` to create an account or sign in.
 
@@ -67,7 +68,7 @@ If Supabase variables are missing, the app continues in browser-local mode.
 
 ## Architecture
 
-The image provider is isolated behind adapters in `lib/providers/`. Additional providers such as Replicate, fal, or ComfyUI can be added without replacing the character UI.
+The image provider is isolated behind adapters in `lib/providers/`, so providers can be configured or extended without replacing the character UI.
 
 Cloud persistence is split into:
 - Postgres tables for characters and generation metadata

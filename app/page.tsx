@@ -487,6 +487,9 @@ export default function Home() {
       if (!data.character?.name && !data.character?.appearance) {
         throw new Error("The selected file does not contain a valid character.");
       }
+      if (typeof data.character !== "object" || data.character === null) {
+        throw new Error("The selected file contains invalid character data.");
+      }
 
       const imported: Character = {
         id: crypto.randomUUID(),

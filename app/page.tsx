@@ -908,7 +908,7 @@ export default function Home() {
             setSaved(false);
             if (file) {
               setReferencePath("");
-              setPendingReferenceDeletion((current) => current || referencePath);
+              if (cloudMode && referencePath) setPendingReferenceDeletion({ characterId: character.id, path: referencePath });
               setCharacter((current) => ({ ...current, referenceImage: URL.createObjectURL(file), referenceImagePath: undefined }));
             }
             e.currentTarget.value = "";

@@ -3,21 +3,37 @@ import type { ImageEditInput, ImageGenerationInput, ImageProviderAdapter } from 
 const baseUrl = () => (process.env.COMFYUI_URL || "http://127.0.0.1:8188").replace(/\/$/, "");
 
 async function prompt(workflow: unknown) {
-  const response = await fetch(baseUrl() + "/prompt", {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+  let response: Response;
+  try {
+    response = await fetch(baseUrl() + "/prompt", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt: workflow, client_id: crypto.randomUUID() }),
-  });
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("ComfyUI request timed out.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!response.ok) throw new Error("ComfyUI rejected the workflow.");
-  return response.json() as Promise<{ prompt_id: string }>;
+  const data = await response.json().catch(() => null) as { prompt_id?: unknown } | null;
+  if (typeof data?.prompt_id !== "string" || !data.prompt_id) {
+    throw new Error("ComfyUI returned an invalid prompt response.");
+  }
+  return data;
 }
 
 async function waitForImage(promptId: string) {
   for (let attempt = 0; attempt < 120; attempt += 1) {
     const response = await fetch(baseUrl() + "/history/" + encodeURIComponent(promptId), { cache: "no-store" });
     if (response.ok) {
-      const history = await response.json() as Record<string, { outputs?: Record<string, { images?: Array<{ filename: string; subfolder: string; type: string }> }> }>;
-      const entry = history[promptId];
+      const history = await response.json().catch(() => null) as Record<string, { outputs?: Record<string, { images?: Array<{ filename: string; subfolder: string; type: string }> }> }> | null;
+      const entry = history?.[promptId];
       const images = entry?.outputs ? Object.values(entry.outputs).flatMap((node) => node.images || []) : [];
       const image = images[0];
       if (image) {

@@ -730,7 +730,17 @@ export default function Home() {
         imageUrlToDownload = signedData.url;
       }
 
-      const response = await fetch(imageUrlToDownload);
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 60_000);
+      let response: Response;
+      try {
+        response = await fetch(imageUrlToDownload, { signal: controller.signal });
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") throw new Error("Image download timed out.");
+        throw error;
+      } finally {
+        window.clearTimeout(timeout);
+      }
       if (!response.ok) throw new Error("Image could not be downloaded.");
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
@@ -863,9 +873,27 @@ export default function Home() {
           <label>Personality<textarea value={character.personality} onChange={(e) => update("personality", e.target.value)} placeholder="Calm, confident, funny..." /></label>
           <label>Reference image<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => {
             const file = e.target.files?.[0] || null;
+            if (file) {
+              if (!new Set(["image/png", "image/jpeg", "image/webp"]).has(file.type)) {
+                setError("Only PNG, JPEG and WebP images are supported.");
+                e.currentTarget.value = "";
+                return;
+              }
+              if (file.size > 8 * 1024 * 1024) {
+                setError("Image must be 8 MB or smaller.");
+                e.currentTarget.value = "";
+                return;
+              }
+            }
             if (character.referenceImage?.startsWith("blob:")) URL.revokeObjectURL(character.referenceImage);
             setReference(file);
-            if (file) setCharacter((current) => ({ ...current, referenceImage: URL.createObjectURL(file) }));
+            setError("");
+            setSaved(false);
+            if (file) {
+              setReferencePath("");
+              setPendingReferenceDeletion((current) => current || referencePath);
+              setCharacter((current) => ({ ...current, referenceImage: URL.createObjectURL(file), referenceImagePath: undefined }));
+            }
             e.currentTarget.value = "";
           }} /></label>
           {displayReference && (

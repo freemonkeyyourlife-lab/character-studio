@@ -1,5 +1,6 @@
 import Replicate from "replicate";
 import type { ImageEditInput, ImageGenerationInput, ImageProviderAdapter } from "./types";
+import { fetchImageBlob } from "./http";
 
 type ReplicateModel = `${string}/${string}` | `${string}/${string}:${string}`;
 
@@ -11,15 +12,9 @@ function client() {
 
 async function outputToBlob(output: unknown): Promise<Blob> {
   const value = Array.isArray(output) ? output[0] : output;
-  if (typeof value === "string") {
-    const response = await fetch(value);
-    if (!response.ok) throw new Error("Replicate returned an unreadable image.");
-    return response.blob();
-  }
+  if (typeof value === "string") return fetchImageBlob(value, "Replicate");
   if (value && typeof value === "object" && "url" in value && typeof (value as { url?: unknown }).url === "string") {
-    const response = await fetch((value as { url: string }).url);
-    if (!response.ok) throw new Error("Replicate returned an unreadable image.");
-    return response.blob();
+    return fetchImageBlob((value as { url: string }).url, "Replicate");
   }
   if (value instanceof Blob) return value;
   throw new Error("Replicate returned an unsupported image format.");

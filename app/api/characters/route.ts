@@ -57,7 +57,7 @@ export async function POST(request: Request) {
   if (!supabase) return NextResponse.json({ error: "Cloud persistence is not configured." }, { status: 503 });
   if (!userId) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
 
-  const body = (await request.json()) as {
+  let body: {
     id?: string;
     name?: string;
     age?: string;
@@ -65,8 +65,37 @@ export async function POST(request: Request) {
     personality?: string;
     referenceImagePath?: string | null;
   };
+  try {
+    body = (await request.json()) as {
+      id?: string;
+      name?: string;
+      age?: string;
+      appearance?: string;
+      personality?: string;
+      referenceImagePath?: string | null;
+    };
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON request." }, { status: 400 });
+  }
 
-  if (!body.id) return NextResponse.json({ error: "Character id is required." }, { status: 400 });
+  if (typeof body.id !== "string" || !body.id.trim()) {
+    return NextResponse.json({ error: "Character id is required." }, { status: 400 });
+  }
+
+  const stringFields = [
+    ["name", body.name],
+    ["age", body.age],
+    ["appearance", body.appearance],
+    ["personality", body.personality],
+  ] as const;
+  for (const [field, value] of stringFields) {
+    if (value !== undefined && typeof value !== "string") {
+      return NextResponse.json({ error: `Character ${field} must be a string.` }, { status: 400 });
+    }
+  }
+  if (body.referenceImagePath !== undefined && body.referenceImagePath !== null && typeof body.referenceImagePath !== "string") {
+    return NextResponse.json({ error: "Reference image path must be a string or null." }, { status: 400 });
+  }
 
   if (body.name && body.name.length > 120) return NextResponse.json({ error: "Character name is limited to 120 characters." }, { status: 400 });
   if (body.age && body.age.length > 40) return NextResponse.json({ error: "Age is limited to 40 characters." }, { status: 400 });

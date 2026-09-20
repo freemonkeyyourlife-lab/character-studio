@@ -17,6 +17,8 @@ Simple Next.js app for creating AI character profiles and generating character i
 - Generation Vault
 - Health endpoint at `/api/health` with provider/cloud configuration status
 - ComfyUI HTTP adapter for local/self-hosted workflows
+- Responsive Video Studio for mobile and desktop
+- Video adapters for Replicate, fal and configurable ComfyUI workflows
 - Server-side validation for image uploads and generation prompts
 
 ## Setup
@@ -31,10 +33,14 @@ HF_EDIT_MODEL=black-forest-labs/FLUX.1-Kontext-dev
 # Optional providers
 REPLICATE_API_TOKEN=your_replicate_token
 FAL_KEY=your_fal_key
+REPLICATE_VIDEO_MODEL=your_replicate_video_model
+FAL_VIDEO_MODEL=your_fal_video_endpoint
 
 # Optional local/self-hosted ComfyUI
 COMFYUI_URL=http://127.0.0.1:8188
 COMFYUI_CHECKPOINT=your_checkpoint_filename
+# Optional JSON workflow for video generation. Supports {{PROMPT}}, {{DURATION}}, {{WIDTH}}, {{HEIGHT}}, {{FPS}}.
+COMFYUI_VIDEO_WORKFLOW=
 
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
@@ -83,3 +89,17 @@ Cloud persistence is split into:
 - Supabase Storage for image files
 - Server API routes for authenticated reads/writes
 - Row Level Security so users only access their own records and assets
+
+
+## Video Studio
+
+Open `/video` from the main app. The video UI is responsive and designed for phones as well as desktop.
+
+Supported modes:
+- **Replicate:** set `REPLICATE_API_TOKEN` and `REPLICATE_VIDEO_MODEL` to a compatible video model.
+- **fal:** set `FAL_KEY` and `FAL_VIDEO_MODEL` to a compatible video endpoint.
+- **ComfyUI:** set `COMFYUI_URL` and `COMFYUI_VIDEO_WORKFLOW`. The workflow is sent to ComfyUI with placeholder substitution for `{{PROMPT}}`, `{{DURATION}}`, `{{WIDTH}}`, `{{HEIGHT}}` and `{{FPS}}`.
+
+The application does not promise unlimited hosted generation: hosted providers can impose their own pricing, quotas, model limits and content policies. Local ComfyUI can avoid per-generation provider fees, but it is still constrained by the local machine, storage, model and workflow.
+
+For a hosted deployment such as Vercel, `COMFYUI_URL` must point to a reachable ComfyUI server; `127.0.0.1` on Vercel refers to the deployment itself, not your home computer.

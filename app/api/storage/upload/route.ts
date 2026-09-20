@@ -54,5 +54,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: signedError.message }, { status: 500 });
   }
 
-  return NextResponse.json({ path, signedUrl: signed.signedUrl });
+  return NextResponse.json({ path, signedUrl: signed.signedUrl }, {
+    headers: { "Cache-Control": "no-store" },
+  });
 }

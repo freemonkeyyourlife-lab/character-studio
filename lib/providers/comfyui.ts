@@ -2,7 +2,7 @@ import type { ImageEditInput, ImageGenerationInput, ImageProviderAdapter } from 
 
 const baseUrl = () => (process.env.COMFYUI_URL || "http://127.0.0.1:8188").replace(/\/$/, "");
 
-async function prompt(workflow: unknown) {
+async function prompt(workflow: unknown): Promise<{ prompt_id: string }> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15_000);
   let response: Response;

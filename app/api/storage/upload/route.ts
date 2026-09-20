@@ -15,9 +15,16 @@ export async function POST(request: Request) {
   const userId = typeof data?.claims?.sub === "string" ? data.claims.sub : null;
   if (claimsError || !userId) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
 
-  const form = await request.formData();
+  let form: FormData;
+  try {
+    form = await request.formData();
+  } catch {
+    return NextResponse.json({ error: "Invalid multipart upload." }, { status: 400 });
+  }
+
   const file = form.get("file");
-  const requestedFolder = String(form.get("folder") || "uploads");
+  const requestedFolderValue = form.get("folder");
+  const requestedFolder = typeof requestedFolderValue === "string" ? requestedFolderValue : "uploads";
   if (requestedFolder.length > 100) {
     return NextResponse.json({ error: "Upload folder is too long." }, { status: 400 });
   }

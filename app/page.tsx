@@ -197,7 +197,17 @@ export default function Home() {
     const form = new FormData();
     form.append("file", file);
     form.append("folder", folder);
-    const response = await fetch("/api/storage/upload", { method: "POST", body: form });
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 60_000);
+    let response: Response;
+    try {
+      response = await fetch("/api/storage/upload", { method: "POST", body: form, signal: controller.signal });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") throw new Error("Image upload timed out.");
+      throw error;
+    } finally {
+      window.clearTimeout(timeout);
+    }
     const data = await response.json();
     if (!response.ok) throw new Error(data?.error || "Image upload failed.");
     return data as { path: string; signedUrl: string };
@@ -361,19 +371,29 @@ export default function Home() {
       }
 
       let response: Response;
-      if (reference) {
-        const form = new FormData();
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 125_000);
+      try {
+        if (reference) {
+          const form = new FormData();
         form.append("prompt", prompt);
         form.append("model", model);
         form.append("provider", provider);
         form.append("reference", reference);
-        response = await fetch("/api/generate", { method: "POST", body: form });
-      } else {
-        response = await fetch("/api/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ provider, model, prompt }),
-        });
+          response = await fetch("/api/generate", { method: "POST", body: form, signal: controller.signal });
+        } else {
+          response = await fetch("/api/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ provider, model, prompt }),
+            signal: controller.signal,
+          });
+        }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") throw new Error("Image generation timed out.");
+        throw error;
+      } finally {
+        window.clearTimeout(timeout);
       }
 
       const type = response.headers.get("content-type") || "";

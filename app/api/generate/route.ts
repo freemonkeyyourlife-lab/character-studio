@@ -24,9 +24,21 @@ async function requireConfiguredAuth() {
 
 async function toBlob(value: Blob | string): Promise<Blob> {
   if (value instanceof Blob) return value;
-  const response = await fetch(value);
-  if (!response.ok) throw new Error("Image provider returned an unreadable image.");
-  return response.blob();
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+  try {
+    const response = await fetch(value, { signal: controller.signal });
+    if (!response.ok) throw new Error("Image provider returned an unreadable image.");
+    return response.blob();
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("Image provider download timed out.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function generate(provider: string, prompt: string, model?: string) {

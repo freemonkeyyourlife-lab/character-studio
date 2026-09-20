@@ -29,6 +29,7 @@ drop policy if exists "characters_owner_update" on public.characters;
 drop policy if exists "characters_owner_delete" on public.characters;
 drop policy if exists "generations_owner_select" on public.generations;
 drop policy if exists "generations_owner_insert" on public.generations;
+drop policy if exists "generations_owner_update" on public.generations;
 drop policy if exists "generations_owner_delete" on public.generations;
 
 create policy "characters_owner_select" on public.characters for select using (auth.uid() = user_id);
@@ -38,6 +39,7 @@ create policy "characters_owner_delete" on public.characters for delete using (a
 
 create policy "generations_owner_select" on public.generations for select using (auth.uid() = user_id);
 create policy "generations_owner_insert" on public.generations for insert with check (auth.uid() = user_id);
+create policy "generations_owner_update" on public.generations for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "generations_owner_delete" on public.generations for delete using (auth.uid() = user_id);
 
 create index if not exists characters_user_id_idx on public.characters(user_id);

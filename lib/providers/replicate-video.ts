@@ -30,6 +30,6 @@ export const replicateVideoProvider: VideoProviderAdapter = {
     if (height) input.height = height;
     if (fps) input.fps = fps;
 
-    return outputToBlob(await client().run(selected as `${string}/${string}:${string}`, { input }));
+    return outputToBlob(await client().run(selected as `${string}/${string}` | `${string}/${string}:${string}`, { input }));
   },
 };

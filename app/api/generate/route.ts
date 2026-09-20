@@ -114,7 +114,6 @@ export async function POST(request: Request) {
 
       const image = await toBlob(await edit(provider, file, prompt, model));
       const bytes = Buffer.from(await image.arrayBuffer());
-    if (bytes.length > MAX_OUTPUT_BYTES) throw new Error("Image provider returned an image larger than 16 MB.");
       if (bytes.length > MAX_OUTPUT_BYTES) throw new Error("Image provider returned an image larger than 16 MB.");
       return new Response(bytes, {
         status: 200,

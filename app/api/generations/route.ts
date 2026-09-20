@@ -47,16 +47,40 @@ export async function POST(request: Request) {
   const userId = typeof data?.claims?.sub === "string" ? data.claims.sub : null;
   if (claimsError || !userId) return NextResponse.json({ error: "Authentication required." }, { status: 401 });
 
-  const body = (await request.json()) as {
+  let body: {
     id?: string;
     characterId?: string;
     name?: string;
     prompt?: string;
     imagePath?: string;
   };
+  try {
+    body = (await request.json()) as {
+      id?: string;
+      characterId?: string;
+      name?: string;
+      prompt?: string;
+      imagePath?: string;
+    };
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON request." }, { status: 400 });
+  }
 
-  if (!body.id || !body.characterId || !body.prompt || !body.imagePath) {
+  if (
+    typeof body.id !== "string" ||
+    typeof body.characterId !== "string" ||
+    typeof body.prompt !== "string" ||
+    typeof body.imagePath !== "string" ||
+    !body.id.trim() ||
+    !body.characterId.trim() ||
+    !body.prompt.trim() ||
+    !body.imagePath.trim()
+  ) {
     return NextResponse.json({ error: "Generation data is incomplete." }, { status: 400 });
+  }
+
+  if (body.name !== undefined && typeof body.name !== "string") {
+    return NextResponse.json({ error: "Generation name must be a string." }, { status: 400 });
   }
 
   if (body.name && body.name.length > 120) {

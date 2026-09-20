@@ -8,6 +8,8 @@ import { comfyuiProvider } from "@/lib/providers/comfyui";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
+const MAX_OUTPUT_BYTES = 16 * 1024 * 1024;
+
 async function requireConfiguredAuth() {
   const supabase = await import("@/lib/supabase/server").then((module) => module.createSupabaseServerClient());
   if (!supabase) return;
@@ -112,6 +114,8 @@ export async function POST(request: Request) {
 
       const image = await toBlob(await edit(provider, file, prompt, model));
       const bytes = Buffer.from(await image.arrayBuffer());
+    if (bytes.length > MAX_OUTPUT_BYTES) throw new Error("Image provider returned an image larger than 16 MB.");
+      if (bytes.length > MAX_OUTPUT_BYTES) throw new Error("Image provider returned an image larger than 16 MB.");
       return new Response(bytes, {
         status: 200,
         headers: { "Content-Type": image.type || "image/png", "Cache-Control": "no-store" },

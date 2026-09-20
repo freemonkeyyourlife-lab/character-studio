@@ -39,7 +39,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [reference, setReference] = useState<File | null>(null);
   const [referencePath, setReferencePath] = useState("");
-  const [pendingReferenceDeletion, setPendingReferenceDeletion] = useState("");
+  const [pendingReferenceDeletion, setPendingReferenceDeletion] = useState<{ characterId: string; path: string } | null>(null);
   const [cloudMode, setCloudMode] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [authEmail, setAuthEmail] = useState("");
@@ -176,7 +176,7 @@ export default function Home() {
     setSavingCharacter(true);
     setError("");
     const next = { ...character, updatedAt: new Date().toISOString() };
-    const previousPath = referencePath || pendingReferenceDeletion;
+    const previousPath = referencePath || (pendingReferenceDeletion?.characterId === character.id ? pendingReferenceDeletion.path : "");
     let nextPath = pathOverride ?? referencePath;
     let temporaryReferencePath = "";
 
@@ -218,7 +218,7 @@ export default function Home() {
       }
 
       setReferencePath(nextPath);
-      setPendingReferenceDeletion("");
+      setPendingReferenceDeletion(null);
       setSaved(true);
       return true;
     } catch (err) {
@@ -314,7 +314,7 @@ export default function Home() {
       setCharacters((current) => [savedCopy, ...current.filter((item) => item.id !== savedCopy.id)]);
       setReference(null);
       setReferencePath("");
-      setPendingReferenceDeletion("");
+      setPendingReferenceDeletion(null);
       clearImagePreview();
       setSaved(true);
       return;
@@ -323,7 +323,7 @@ export default function Home() {
     setCharacter(copy);
     setReference(null);
     setReferencePath("");
-    setPendingReferenceDeletion("");
+    setPendingReferenceDeletion(null);
     clearImagePreview();
     setSaved(false);
     const updated = [copy, ...characters.filter((item) => item.id !== copy.id)];
@@ -336,6 +336,11 @@ export default function Home() {
     setCharacter((current) => ({ ...current, referenceImage: undefined, updatedAt: new Date().toISOString() }));
     setReference(null);
     setReferencePath("");
+    if (cloudMode && character.referenceImagePath) {
+      setPendingReferenceDeletion({ characterId: character.id, path: character.referenceImagePath });
+    } else {
+      setPendingReferenceDeletion(null);
+    }
     setSaved(false);
     setError("");
   };
@@ -586,7 +591,7 @@ export default function Home() {
     clearImagePreview();
     setReference(null);
     setReferencePath(item.referenceImagePath || "");
-    setPendingReferenceDeletion("");
+    setPendingReferenceDeletion(null);
     setSaved(true);
   };
 

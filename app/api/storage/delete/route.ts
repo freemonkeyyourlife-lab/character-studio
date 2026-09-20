@@ -28,5 +28,5 @@ export async function DELETE(request: Request) {
   const { error } = await supabase.storage.from("character-assets").remove([path]);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
 }

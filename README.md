@@ -47,6 +47,14 @@ npm install
 npm run dev
 ```
 
+For mobile testing on the same local network, use:
+```bash
+npm run dev:lan
+```
+Then open the computer's local network address (for example `http://192.168.x.x:3000`) on the phone. Keep the computer and phone on the same trusted network.
+
+The app is also designed to run as a normal hosted Next.js application (for example on Vercel). Local browser storage remains the fallback when Supabase is not configured; hosted deployments can use Supabase for cross-device data.
+
 For production checks:
 
 ```bash

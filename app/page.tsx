@@ -175,9 +175,17 @@ export default function Home() {
     setSavingCharacter(true);
     setError("");
     const next = { ...character, updatedAt: new Date().toISOString() };
-    const nextPath = pathOverride ?? referencePath;
+    const previousPath = referencePath;
+    let nextPath = pathOverride ?? referencePath;
+    let temporaryReferencePath = "";
 
     try {
+      if (cloudMode && reference && !pathOverride) {
+        const uploaded = await uploadFile(reference, "references");
+        temporaryReferencePath = uploaded.path;
+        nextPath = uploaded.path;
+      }
+
       if (cloudMode) {
         const response = await fetch("/api/characters", {
           method: "POST",
@@ -187,11 +195,16 @@ export default function Home() {
             referenceImagePath: nextPath || null,
           }),
         });
-        const data = await response.json();
+        const data = await response.json().catch(() => null);
         if (!response.ok) throw new Error(data?.error || "Could not save character.");
+        if (!data?.character) throw new Error("Character save returned an invalid response.");
+
         const savedCharacter = data.character as Character;
         setCharacter({ ...next, ...savedCharacter, referenceImagePath: nextPath, referenceImage: character.referenceImage } as Character);
         setCharacters((current) => [savedCharacter, ...current.filter((item) => item.id !== savedCharacter.id)]);
+
+        if (previousPath && previousPath !== nextPath) await deleteUploadedFile(previousPath);
+        temporaryReferencePath = "";
       } else {
         const updated = [next, ...characters.filter((item) => item.id !== next.id)];
         const persisted = updated.map((item) => (
@@ -202,10 +215,12 @@ export default function Home() {
         setCharacters(updated);
         localStorage.setItem(CHARACTER_KEY, JSON.stringify(persisted));
       }
+
       setReferencePath(nextPath);
       setSaved(true);
       return true;
     } catch (err) {
+      if (temporaryReferencePath) await deleteUploadedFile(temporaryReferencePath);
       setError(err instanceof Error ? err.message : "Could not save character.");
       return false;
     } finally {

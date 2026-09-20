@@ -32,9 +32,11 @@ export const replicateProvider: ImageProviderAdapter = {
     return outputToBlob(output);
   },
   async edit({ prompt, model, image }: ImageEditInput) {
-    const selected = (model || process.env.REPLICATE_EDIT_MODEL) as ReplicateModel | undefined;
-    if (!selected) throw new Error("REPLICATE_EDIT_MODEL is not configured.");
-    const output = await client().run(selected, { input: { prompt, image } });
+    const selected = (model || process.env.REPLICATE_EDIT_MODEL || "black-forest-labs/flux-redux-schnell") as ReplicateModel;
+    const input = selected === "black-forest-labs/flux-redux-schnell"
+      ? { redux_image: image, aspect_ratio: "1:1", num_outputs: 1, output_format: "webp", output_quality: 80, num_inference_steps: 4 }
+      : { prompt, image };
+    const output = await client().run(selected, { input });
     return outputToBlob(output);
   },
 };

@@ -1,17 +1,23 @@
 import type { ImageEditInput, ImageGenerationInput, ImageProviderAdapter } from "./types";
 
-const baseUrl = () => (process.env.COMFYUI_URL || "http://127.0.0.1:8188").replace(/\/$/, "");
-
-async function prompt(workflow: unknown): Promise<{ prompt_id: string }> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15_000);
-  let response: Response;
+function baseUrl() {
+  const value = (process.env.COMFYUI_URL || "http://127.0.0.1:8188").trim().replace(/\/$/, "");
   try {
-    response = await fetch(baseUrl() + "/prompt", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: workflow, client_id: crypto.randomUUID() }),
-    });
+    const url = new URL(value);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      throw new Error("unsupported protocol");
+    }
+  } catch {
+    throw new Error("COMFYUI_URL must be a valid HTTP(S) URL.");
+  }
+  return value;
+}
+
+async function fetchWithTimeout(input: string, init?: RequestInit, timeoutMs = 10_000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw new Error("ComfyUI request timed out.");
@@ -20,6 +26,14 @@ async function prompt(workflow: unknown): Promise<{ prompt_id: string }> {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function prompt(workflow: unknown): Promise<{ prompt_id: string }> {
+  const response = await fetchWithTimeout(baseUrl() + "/prompt", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt: workflow, client_id: crypto.randomUUID() }),
+  }, 15_000);
   if (!response.ok) throw new Error("ComfyUI rejected the workflow.");
   const data = await response.json().catch(() => null) as { prompt_id?: unknown } | null;
   if (typeof data?.prompt_id !== "string" || !data.prompt_id) {
@@ -30,7 +44,10 @@ async function prompt(workflow: unknown): Promise<{ prompt_id: string }> {
 
 async function waitForImage(promptId: string) {
   for (let attempt = 0; attempt < 120; attempt += 1) {
-    const response = await fetch(baseUrl() + "/history/" + encodeURIComponent(promptId), { cache: "no-store" });
+    const response = await fetchWithTimeout(
+      baseUrl() + "/history/" + encodeURIComponent(promptId),
+      { cache: "no-store" },
+    );
     if (response.ok) {
       const history = await response.json().catch(() => null) as Record<string, { outputs?: Record<string, { images?: Array<{ filename: string; subfolder: string; type: string }> }> }> | null;
       const entry = history?.[promptId];
@@ -38,7 +55,7 @@ async function waitForImage(promptId: string) {
       const image = images[0];
       if (image) {
         const query = new URLSearchParams({ filename: image.filename, subfolder: image.subfolder, type: image.type });
-        const result = await fetch(baseUrl() + "/view?" + query.toString());
+        const result = await fetchWithTimeout(baseUrl() + "/view?" + query.toString());
         if (!result.ok) throw new Error("ComfyUI generated an unreadable image.");
         return result.blob();
       }

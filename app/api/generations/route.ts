@@ -151,5 +151,5 @@ export async function POST(request: Request) {
       imageUrl: signed.data?.signedUrl || "",
       createdAt: row.created_at,
     },
-  });
+  }, { headers: { "Cache-Control": "no-store" } });
 }

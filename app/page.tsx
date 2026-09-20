@@ -699,7 +699,8 @@ export default function Home() {
     try {
       if (cloudMode) {
         const response = await fetch(`/api/generations/${item.id}`, { method: "DELETE" });
-        const data = await response.json();
+        const type = response.headers.get("content-type") || "";
+        const data = type.includes("application/json") ? await response.json().catch(() => null) : null;
         if (!response.ok) throw new Error(data?.error || "Could not delete generation.");
       }
       const updated = generations.filter((generation) => generation.id !== item.id);
@@ -772,7 +773,8 @@ export default function Home() {
     try {
       if (cloudMode) {
         const response = await fetch(`/api/characters/${character.id}`, { method: "DELETE" });
-        const data = await response.json();
+        const type = response.headers.get("content-type") || "";
+        const data = type.includes("application/json") ? await response.json().catch(() => null) : null;
         if (!response.ok) throw new Error(data?.error || "Could not delete character.");
       } else {
         const next = characters.filter((item) => item.id !== character.id);

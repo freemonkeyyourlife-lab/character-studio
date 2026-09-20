@@ -723,8 +723,11 @@ export default function Home() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ path: item.imagePath }),
         });
-        const signedData = await signedResponse.json();
-        if (!signedResponse.ok || !signedData?.url) {
+        const signedType = signedResponse.headers.get("content-type") || "";
+        const signedData = signedType.includes("application/json")
+          ? await signedResponse.json().catch(() => null)
+          : null;
+        if (!signedResponse.ok || typeof signedData?.url !== "string") {
           throw new Error(signedData?.error || "Could not refresh image access.");
         }
         imageUrlToDownload = signedData.url;

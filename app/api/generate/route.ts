@@ -98,20 +98,27 @@ export async function POST(request: Request) {
       });
     }
 
-    const body = (await request.json()) as { prompt?: string; provider?: string; model?: string };
-    if (!body.prompt?.trim()) return NextResponse.json({ error: "Prompt is required." }, { status: 400 });
+    let body: { prompt?: string; provider?: string; model?: string };
+    try {
+      body = (await request.json()) as { prompt?: string; provider?: string; model?: string };
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON request." }, { status: 400 });
+    }
 
-    const provider = body.provider?.trim() || "huggingface";
-    const model = body.model?.trim();
+    const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
+    if (!prompt) return NextResponse.json({ error: "Prompt is required." }, { status: 400 });
 
-    if (body.prompt.trim().length > 4000) {
+    const provider = typeof body.provider === "string" ? body.provider.trim() || "huggingface" : "huggingface";
+    const model = typeof body.model === "string" ? body.model.trim() : "";
+
+    if (prompt.length > 4000) {
       return NextResponse.json({ error: "Prompt is limited to 4000 characters." }, { status: 400 });
     }
 
     const selection = selectionError(provider, model, "text-to-image");
     if (selection) return NextResponse.json({ error: selection }, { status: 400 });
 
-    const image = await toBlob(await generate(provider, body.prompt.trim(), model));
+    const image = await toBlob(await generate(provider, prompt, model));
     const bytes = Buffer.from(await image.arrayBuffer());
     return new Response(bytes, {
       status: 200,

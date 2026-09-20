@@ -3,6 +3,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function GET() {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return NextResponse.json({ error: "Cloud persistence is not configured." }, { status: 503 });
@@ -36,7 +38,7 @@ export async function GET() {
     };
   }));
 
-  return NextResponse.json({ generations });
+  return NextResponse.json({ generations }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: Request) {
@@ -91,8 +93,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Prompt is limited to 4000 characters." }, { status: 400 });
   }
 
-  if (body.id.length > 200 || body.characterId.length > 200) {
-    return NextResponse.json({ error: "Generation identifiers are too long." }, { status: 400 });
+  if (!UUID_RE.test(body.id) || !UUID_RE.test(body.characterId)) {
+    return NextResponse.json({ error: "Generation identifiers must be valid UUIDs." }, { status: 400 });
   }
 
   if (body.imagePath.length > 500) {

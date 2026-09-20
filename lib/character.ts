@@ -53,6 +53,7 @@ export const imageProviders: ImageProvider[] = [
     description: "Hosted generative media adapter. Requires FAL_KEY.",
     models: [
       { id: "fal-ai/flux/schnell", name: "FLUX schnell", capabilities: ["text-to-image"] },
+      { id: "fal-ai/flux/dev/image-to-image", name: "FLUX dev image-to-image", capabilities: ["image-edit"] },
     ],
   },
   {

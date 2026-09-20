@@ -138,3 +138,45 @@ input:focus, textarea:focus, select:focus { border-color: #7b8494; }
   padding: 9px 10px;
   font-size: 12px;
 }
+
+
+.videoOptions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 6px 0 18px;
+}
+.videoOptions label { margin: 0; }
+.videoPreview { min-height: 620px; }
+.generatedVideo {
+  width: 100%;
+  max-height: 620px;
+  min-height: 320px;
+  object-fit: contain;
+  background: #111;
+  border-radius: 15px;
+  display: block;
+  margin-bottom: 18px;
+}
+.videoEmpty {
+  min-height: 500px;
+  border-radius: 15px;
+  background: #eef1f5;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  color: #667085;
+  text-align: center;
+}
+.videoEmpty strong { color: #16181d; font-size: 18px; }
+.videoNotes { margin-top: 18px; }
+.videoNotes p { color: #667085; line-height: 1.6; }
+@media (max-width: 760px) {
+  .videoOptions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .generatedVideo { min-height: 220px; max-height: 70vh; }
+  .videoEmpty { min-height: 280px; }
+}
+@media (max-width: 420px) {
+  .videoOptions { grid-template-columns: 1fr; }
+}

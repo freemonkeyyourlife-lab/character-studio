@@ -1,4 +1,5 @@
 import { InferenceClient } from "@huggingface/inference";
+import { fetchImageBlob } from "./http";
 
 const DEFAULT_MODEL = "black-forest-labs/FLUX.1-schnell";
 const EDIT_MODEL = "black-forest-labs/FLUX.1-Kontext-dev";
@@ -11,9 +12,7 @@ function client() {
 
 async function toBlob(value: Blob | string): Promise<Blob> {
   if (value instanceof Blob) return value;
-  const response = await fetch(value);
-  if (!response.ok) throw new Error("Hugging Face returned an unreadable image.");
-  return response.blob();
+  return fetchImageBlob(value, "Hugging Face");
 }
 
 export async function generateWithHuggingFace(prompt: string, model?: string): Promise<Blob> {

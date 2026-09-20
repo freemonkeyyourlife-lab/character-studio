@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-export const metadata: Metadata = {
+export const viewport: Viewport = {\n  width: "device-width",\n  initialScale: 1,\n  viewportFit: "cover",\n};\n\nexport const metadata: Metadata = {
   title: "Character Studio",
   description: "Create and manage AI characters.",
 };

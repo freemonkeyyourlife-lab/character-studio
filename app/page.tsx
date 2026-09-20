@@ -480,7 +480,6 @@ export default function Home() {
       if (cloudMode && reference) {
         const uploaded = await uploadFile(reference, "references");
         temporaryReferencePath = uploaded.path;
-        setReferencePath(uploaded.path);
         const characterSaved = await saveCharacter(uploaded.path);
         if (!characterSaved) {
           await deleteUploadedFile(uploaded.path);

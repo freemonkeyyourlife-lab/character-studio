@@ -35,7 +35,7 @@ function replacePlaceholders(value: unknown, input: VideoGenerationInput): unkno
 }
 
 function mediaReference(value: unknown): { filename: string; subfolder: string; type: string } | null {
-  const videoExtensions = /\\.(mp4|webm|mov|mkv|avi|gif|webp)$/i;
+  const videoExtensions = /\.(mp4|webm|mov|mkv|avi|gif|webp)$/i;
   if (value && typeof value === "object") {
     const record = value as Record<string, unknown>;
     if (typeof record.filename === "string" && videoExtensions.test(record.filename)) {

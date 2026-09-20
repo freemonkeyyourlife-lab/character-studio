@@ -362,10 +362,8 @@ export default function Home() {
     setError("");
 
     try {
-      let uploadedReferencePath = referencePath;
       if (cloudMode && reference) {
         const uploaded = await uploadFile(reference, "references");
-        uploadedReferencePath = uploaded.path;
         setReferencePath(uploaded.path);
         await saveCharacter(uploaded.path);
       }
@@ -376,10 +374,10 @@ export default function Home() {
       try {
         if (reference) {
           const form = new FormData();
-        form.append("prompt", prompt);
-        form.append("model", model);
-        form.append("provider", provider);
-        form.append("reference", reference);
+          form.append("prompt", prompt);
+          form.append("model", model);
+          form.append("provider", provider);
+          form.append("reference", reference);
           response = await fetch("/api/generate", { method: "POST", body: form, signal: controller.signal });
         } else {
           response = await fetch("/api/generate", {

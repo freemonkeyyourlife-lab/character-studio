@@ -39,6 +39,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [reference, setReference] = useState<File | null>(null);
   const [referencePath, setReferencePath] = useState("");
+  const [pendingReferenceDeletion, setPendingReferenceDeletion] = useState("");
   const [cloudMode, setCloudMode] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [authEmail, setAuthEmail] = useState("");
@@ -175,7 +176,7 @@ export default function Home() {
     setSavingCharacter(true);
     setError("");
     const next = { ...character, updatedAt: new Date().toISOString() };
-    const previousPath = referencePath;
+    const previousPath = referencePath || pendingReferenceDeletion;
     let nextPath = pathOverride ?? referencePath;
     let temporaryReferencePath = "";
 
@@ -582,6 +583,7 @@ export default function Home() {
     clearImagePreview();
     setReference(null);
     setReferencePath(item.referenceImagePath || "");
+    setPendingReferenceDeletion("");
     setSaved(true);
   };
 

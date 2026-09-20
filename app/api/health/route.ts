@@ -14,6 +14,12 @@ export async function GET() {
     comfyui: configured(process.env.COMFYUI_URL) && configured(process.env.COMFYUI_CHECKPOINT),
   };
 
+  const videoProviders = {
+    replicate: configured(process.env.REPLICATE_API_TOKEN) && configured(process.env.REPLICATE_VIDEO_MODEL),
+    fal: configured(process.env.FAL_KEY) && configured(process.env.FAL_VIDEO_MODEL),
+    comfyui: configured(process.env.COMFYUI_URL) && configured(process.env.COMFYUI_VIDEO_WORKFLOW),
+  };
+
   const cloud = {
     supabase: configured(process.env.NEXT_PUBLIC_SUPABASE_URL) && configured(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY),
   };
@@ -23,6 +29,7 @@ export async function GET() {
       ok: true,
       service: "character-studio",
       providers,
+      videoProviders,
       cloud,
     },
     {

@@ -4,12 +4,12 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Character Studio",
     short_name: "Character Studio",
-    description: "Create and manage AI characters.",
+    description: "Character, image and video generation workspace.",
     start_url: "/",
     display: "standalone",
     background_color: "#f5f6f8",
     theme_color: "#16181d",
-    orientation: "portrait-primary",
-    icons: [],
+    orientation: "any",
+    icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
   };
 }

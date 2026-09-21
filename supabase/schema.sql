@@ -95,3 +95,40 @@ using (
   bucket_id = 'character-assets'
   and owner_id = (select auth.uid()::text)
 );
+
+
+create table if not exists public.voice_profiles (
+  id uuid primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  character_id uuid references public.characters(id) on delete set null,
+  provider text not null default 'elevenlabs',
+  provider_voice_id text not null,
+  name text not null,
+  consent_subject text not null,
+  consent_granted_at timestamptz not null default now(),
+  consent_expires_at timestamptz,
+  consent_revoked_at timestamptz,
+  consent_scopes text[] not null default array['voice-synthesis', 'voice-cloning'],
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (user_id, provider, provider_voice_id)
+);
+
+alter table public.voice_profiles enable row level security;
+
+drop policy if exists "voice_profiles_owner_select" on public.voice_profiles;
+drop policy if exists "voice_profiles_owner_insert" on public.voice_profiles;
+drop policy if exists "voice_profiles_owner_update" on public.voice_profiles;
+drop policy if exists "voice_profiles_owner_delete" on public.voice_profiles;
+
+create policy "voice_profiles_owner_select" on public.voice_profiles
+for select to authenticated using (auth.uid() = user_id);
+create policy "voice_profiles_owner_insert" on public.voice_profiles
+for insert to authenticated with check (auth.uid() = user_id);
+create policy "voice_profiles_owner_update" on public.voice_profiles
+for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "voice_profiles_owner_delete" on public.voice_profiles
+for delete to authenticated using (auth.uid() = user_id);
+
+create index if not exists voice_profiles_user_id_idx on public.voice_profiles(user_id);
+create index if not exists voice_profiles_character_id_idx on public.voice_profiles(character_id);

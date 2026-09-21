@@ -12,4 +12,6 @@ export async function requireConfiguredAuth() {
       headers: { "Content-Type": "application/json" },
     });
   }
+
+  return userId;
 }

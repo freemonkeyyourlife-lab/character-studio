@@ -36,6 +36,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const userId = await requireConfiguredAuth();
+    if (!userId) return NextResponse.json({ error: "Cloud authentication is not configured." }, { status: 503 });
     const body = await request.json();
     const providerVoiceId = typeof body.providerVoiceId === "string" ? body.providerVoiceId.trim() : "";
     const name = typeof body.name === "string" ? body.name.trim() : "";

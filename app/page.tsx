@@ -836,6 +836,7 @@ export default function Home() {
         </div>
         <div className="headerActions">
           <a className="secondary smallButton" href="/video">Video Studio</a>
+          <a className="secondary smallButton" href="/integrations/artanis">Artanis Bridge</a>
           <div className="status">{cloudMode ? `CLOUD · SYNCED${authEmail ? ` · ${authEmail}` : ""}` : "LOCAL · BROWSER"}</div>
           {authChecked && cloudMode && <button className="secondary smallButton" onClick={signOut}>Sign out</button>}
           {authChecked && !cloudMode && <a className="secondary smallButton" href="/auth">Sign in</a>}

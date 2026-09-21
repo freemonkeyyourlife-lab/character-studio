@@ -18,6 +18,7 @@ Simple Next.js app for creating AI character profiles and generating character i
 - Health endpoint at `/api/health` with provider/cloud configuration status
 - ComfyUI HTTP adapter for local/self-hosted workflows
 - Responsive Video Studio for mobile and desktop
+- Voice Studio with ElevenLabs Instant Voice Cloning and text-to-speech
 - Video adapters for Replicate, fal and configurable ComfyUI workflows
 - Server-side validation for image uploads and generation prompts
 
@@ -33,6 +34,8 @@ HF_EDIT_MODEL=black-forest-labs/FLUX.1-Kontext-dev
 # Optional providers
 REPLICATE_API_TOKEN=your_replicate_token
 FAL_KEY=your_fal_key
+ELEVENLABS_API_KEY=your_elevenlabs_api_key
+ELEVENLABS_TTS_MODEL=eleven_multilingual_v2
 REPLICATE_VIDEO_MODEL=your_replicate_video_model
 FAL_VIDEO_MODEL=your_fal_video_endpoint
 
@@ -120,9 +123,14 @@ Endpoints:
 - `POST /api/integrations/artanis/image` — use chat context to generate an image.
 - `POST /api/integrations/artanis/video` — use chat context to generate a video.
 - `GET /api/integrations/artanis/health` — inspect integration capability/configuration.
+- `POST /api/integrations/artanis/voice` — turn Artanis scene/chat text into speech with a configured ElevenLabs voice.
 
 Base44 should call these endpoints from a backend function and send `x-artanis-integration-secret`. Do not put the secret in browser code.
 
 Reference assets are accepted by the context layer only when the incoming asset is explicitly marked `consentGranted: true`. This is an integration-level permission signal, not a legal determination; applications should retain their own consent records and allow revocation.
 
-Voice generation is intentionally represented as a future adapter. The current Character Studio integration does not claim voice cloning is implemented.
+## Voice Studio
+
+Open `/voice` to create an ElevenLabs Instant Voice Clone from uploaded samples and synthesize speech from text. Set `ELEVENLABS_API_KEY` and optionally `ELEVENLABS_TTS_MODEL`.
+
+The clone flow requires an explicit consent confirmation and records the declared consent subject in the application response. This is an application-level safeguard, not a legal determination. ElevenLabs documents additional verification and account restrictions for Professional Voice Cloning; PVC is not treated as an unrestricted third-party cloning API here. Voice clones also remain managed by the provider rather than becoming portable model files. urlElevenLabs voice-cloning documentationhttps://elevenlabs.io/docs/eleven-api/concepts/voice-cloning

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireConfiguredAuth } from "@/lib/auth";
 import { cloneVoiceWithElevenLabs } from "@/lib/providers/elevenlabs";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -11,7 +12,7 @@ const MAX_NAME = 120;
 
 export async function POST(request: Request) {
   try {
-    await requireConfiguredAuth();
+    const userId = await requireConfiguredAuth();
 
     const form = await request.formData();
     const name = String(form.get("name") || "").trim();
@@ -46,10 +47,26 @@ export async function POST(request: Request) {
     }
 
     const result = await cloneVoiceWithElevenLabs(name, files, description || undefined);
+    const supabase = await createSupabaseServerClient();
+    if (!supabase) return NextResponse.json({ error: "Cloud storage is not configured." }, { status: 503 });
+
+    const { data: profile, error: profileError } = await supabase.from("voice_profiles").insert({
+      id: crypto.randomUUID(),
+      user_id: userId,
+      provider: "elevenlabs",
+      provider_voice_id: result.voiceId,
+      name,
+      consent_subject: consentSubject,
+      consent_scopes: ["voice-cloning", "voice-synthesis"],
+    }).select("id,provider_voice_id,name,consent_subject,consent_granted_at,consent_expires_at,consent_revoked_at,consent_scopes").single();
+
+    if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
+
     return NextResponse.json({
       ok: true,
       provider: "elevenlabs",
       voiceId: result.voiceId,
+      profile,
       requiresVerification: result.requiresVerification,
       consent: {
         granted: true,

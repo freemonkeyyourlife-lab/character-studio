@@ -9,7 +9,6 @@ export default function ArtanisIntegrationPage() {
   const [messagesText, setMessagesText] = useState("");
   const [mode, setMode] = useState<"prompt" | "image" | "video">("prompt");
   const [result, setResult] = useState("");
-  const [error, setError] = useState("");
 
   const messages = useMemo<Message[]>(() => {
     try {
@@ -20,21 +19,13 @@ export default function ArtanisIntegrationPage() {
     }
   }, [messagesText]);
 
-  const build = async () => {
-    setError("");
-    setResult("");
-    try {
-      const response = await fetch("/api/integrations/artanis/context", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-artanis-integration-secret": "browser-disabled" },
-        body: JSON.stringify({ instruction, messages, mode }),
-      });
-      const data = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(data?.error || "Integration endpoint is protected for server-to-server use.");
-      setResult(data?.prompt || "");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not build context.");
-    }
+  const build = () => {
+    const preview = [
+      instruction ? `USER DIRECTIVE: ${instruction}` : "",
+      messages.length ? `CHAT MESSAGES: ${messages.length}` : "",
+      `MODE: ${mode}`,
+    ].filter(Boolean).join("\n");
+    setResult(preview || "No context supplied yet.");
   };
 
   return (
@@ -54,8 +45,7 @@ export default function ArtanisIntegrationPage() {
           <label>Instruction<textarea value={instruction} onChange={(e) => setInstruction(e.target.value)} placeholder="What should be created from the conversation?" maxLength={8000} /></label>
           <label>Chat messages as JSON<textarea value={messagesText} onChange={(e) => setMessagesText(e.target.value)} placeholder='[{"role":"user","content":"..."},{"role":"assistant","content":"..."}]' /></label>
           <label>Output mode<select value={mode} onChange={(e) => setMode(e.target.value as typeof mode)}><option value="prompt">Prompt only</option><option value="image">Image</option><option value="video">Video</option></select></label>
-          <button className="primary" onClick={() => void build()}>Test protected bridge</button>
-          {error && <div className="error">{error}</div>}
+          <button className="primary" onClick={build}>Preview payload</button>
         </div>
         <div className="card">
           <h2>Integration contract</h2>

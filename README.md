@@ -71,6 +71,10 @@ npm run typecheck
 npm run build
 ```
 
+## Voice profiles
+
+The SQL schema now includes a private `voice_profiles` table. Apply the current `supabase/schema.sql` in the Supabase SQL editor when enabling cloud voice profiles. The table stores the provider voice ID and consent metadata, not the original audio samples. Voice profiles are protected by owner-only RLS policies.
+
 ## Supabase
 
 1. Create a Supabase project.

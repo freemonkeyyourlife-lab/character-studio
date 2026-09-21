@@ -20,6 +20,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const voiceId = typeof body.voiceId === "string" ? body.voiceId.trim() : "";
     if (!voiceId) return NextResponse.json({ error: "voiceId is required." }, { status: 400 });
+    if (body.consentGranted !== true) return NextResponse.json({ error: "Explicit voice-use consent is required." }, { status: 400 });
 
     const context = normalizeArtanisContext({ ...body, mode: "prompt" });
     const prompt = buildArtanisPrompt(context);

@@ -11,6 +11,7 @@ const MAX_OUTPUT_BYTES = 32 * 1024 * 1024;
 export async function POST(request: Request) {
   try {
     const userId = await requireConfiguredAuth();
+    if (!userId) return NextResponse.json({ error: "Cloud authentication is not configured." }, { status: 503 });
     const body = (await request.json()) as {
       voiceId?: unknown;
       voiceProfileId?: unknown;

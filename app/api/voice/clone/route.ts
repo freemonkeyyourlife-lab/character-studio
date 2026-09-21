@@ -13,6 +13,7 @@ const MAX_NAME = 120;
 export async function POST(request: Request) {
   try {
     const userId = await requireConfiguredAuth();
+    if (!userId) return NextResponse.json({ error: "Cloud authentication is not configured." }, { status: 503 });
 
     const form = await request.formData();
     const name = String(form.get("name") || "").trim();

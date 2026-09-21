@@ -15,6 +15,7 @@ function validDate(value: unknown) {
 export async function GET() {
   try {
     const userId = await requireConfiguredAuth();
+    if (!userId) return NextResponse.json({ error: "Cloud authentication is not configured." }, { status: 503 });
     const supabase = await createSupabaseServerClient();
     if (!supabase) return NextResponse.json({ profiles: [] }, { headers: { "Cache-Control": "no-store" } });
 

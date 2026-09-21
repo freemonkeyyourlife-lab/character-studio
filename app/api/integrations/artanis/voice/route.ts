@@ -21,6 +21,14 @@ export async function POST(request: Request) {
     const voiceId = typeof body.voiceId === "string" ? body.voiceId.trim() : "";
     if (!voiceId) return NextResponse.json({ error: "voiceId is required." }, { status: 400 });
     if (body.consentGranted !== true) return NextResponse.json({ error: "Explicit voice-use consent is required." }, { status: 400 });
+    if (typeof body.consentRevokedAt === "string" && body.consentRevokedAt.trim()) {
+      return NextResponse.json({ error: "Voice consent has been revoked." }, { status: 403 });
+    }
+    if (typeof body.consentExpiresAt === "string" && body.consentExpiresAt.trim()) {
+      const expiry = Date.parse(body.consentExpiresAt);
+      if (!Number.isFinite(expiry)) return NextResponse.json({ error: "Invalid voice consent expiry." }, { status: 400 });
+      if (expiry <= Date.now()) return NextResponse.json({ error: "Voice consent has expired." }, { status: 403 });
+    }
 
     const context = normalizeArtanisContext({ ...body, mode: "prompt" });
     const prompt = buildArtanisPrompt(context);

@@ -12,6 +12,15 @@ export type ArtanisCharacterContext = {
   referenceImageUrl?: string;
 };
 
+export type ArtanisConsentContext = {
+  subjectId?: string;
+  grantedBy?: string;
+  grantedAt?: string;
+  expiresAt?: string;
+  revokedAt?: string;
+  scopes?: string[];
+};
+
 export type ArtanisAssetContext = {
   id?: string;
   type: "image" | "video" | "audio" | "document";
@@ -19,6 +28,7 @@ export type ArtanisAssetContext = {
   label?: string;
   consentGranted?: boolean;
   consentScope?: string[];
+  consent?: ArtanisConsentContext;
 };
 
 export type ArtanisContextRequest = {
@@ -74,12 +84,26 @@ function cleanAssets(assets: unknown): ArtanisAssetContext[] {
     if (type !== "image" && type !== "video" && type !== "audio" && type !== "document") return [];
     const consentGranted = (item as { consentGranted?: unknown }).consentGranted === true;
     if (!consentGranted) return [];
+    const consent = (item as { consent?: unknown }).consent;
+    const consentRecord = consent && typeof consent === "object" ? consent as Record<string, unknown> : undefined;
+    const revokedAt = clean(consentRecord?.revokedAt, 80);
+    const expiresAt = clean(consentRecord?.expiresAt, 80);
+    const consentValid = !revokedAt && (!expiresAt || Date.parse(expiresAt) > Date.now());
     const scopes = Array.isArray((item as { consentScope?: unknown }).consentScope)
       ? ((item as { consentScope?: unknown }).consentScope as unknown[]).filter((scope): scope is string => typeof scope === "string").slice(0, 20)
       : [];
     const url = clean((item as { url?: unknown }).url, MAX_ASSET_URL);
+    if (!consentValid) return [];
+    const consentContext: ArtanisConsentContext | undefined = consentRecord ? {
+      subjectId: clean(consentRecord.subjectId, 120) || undefined,
+      grantedBy: clean(consentRecord.grantedBy, 160) || undefined,
+      grantedAt: clean(consentRecord.grantedAt, 80) || undefined,
+      expiresAt: expiresAt || undefined,
+      revokedAt: undefined,
+      scopes,
+    } : undefined;
     const label = clean((item as { label?: unknown }).label, 160);
-    return [{ id: clean((item as { id?: unknown }).id, 120) || undefined, type, url: url || undefined, label: label || undefined, consentGranted, consentScope: scopes }];
+    return [{ id: clean((item as { id?: unknown }).id, 120) || undefined, type, url: url || undefined, label: label || undefined, consentGranted, consentScope: scopes, consent: consentContext }];
   });
 }
 

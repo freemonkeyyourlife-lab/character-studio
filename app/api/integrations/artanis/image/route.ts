@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { buildArtanisPrompt, normalizeArtanisContext, type ArtanisContextRequest } from "@/lib/integrations/artanis";
 import { getProvider } from "@/lib/character";
-import { hfProvider } from "@/lib/providers/huggingface";
+import { generateWithHuggingFace } from "@/lib/providers/huggingface";
 import { replicateProvider } from "@/lib/providers/replicate";
 import { falProvider } from "@/lib/providers/fal";
 import { comfyuiProvider } from "@/lib/providers/comfyui";
@@ -18,7 +18,7 @@ function authorized(request: Request) {
 
 function adapter(provider: string) {
   if (!getProvider(provider)) throw new Error("Unknown image provider.");
-  if (provider === "huggingface") return hfProvider;
+  if (provider === "huggingface") return { generate: ({ prompt, model }: { prompt: string; model?: string }) => generateWithHuggingFace(prompt, model) };
   if (provider === "replicate") return replicateProvider;
   if (provider === "fal") return falProvider;
   if (provider === "comfyui") return comfyuiProvider;

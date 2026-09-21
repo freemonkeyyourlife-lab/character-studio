@@ -103,3 +103,26 @@ Supported modes:
 The application does not promise unlimited hosted generation: hosted providers can impose their own pricing, quotas, model limits and content policies. Local ComfyUI can avoid per-generation provider fees, but it is still constrained by the local machine, storage, model and workflow.
 
 For a hosted deployment such as Vercel, `COMFYUI_URL` must point to a reachable ComfyUI server; `127.0.0.1` on Vercel refers to the deployment itself, not your home computer.
+
+
+## Artanis / Triania integration
+
+Character Studio exposes a protected server-to-server integration layer for a separate Base44 app such as the Artanis/Triania project. Base44 can send live chat context, a character definition and explicitly consented reference assets to Character Studio. The bridge turns that context into a structured generation prompt and can hand the prompt to the existing image or video provider adapters.
+
+Configure only on the server:
+
+```env
+ARTANIS_INTEGRATION_SECRET=use-a-long-random-secret
+```
+
+Endpoints:
+- `POST /api/integrations/artanis/context` — normalize chat context and return a generated visual prompt/context.
+- `POST /api/integrations/artanis/image` — use chat context to generate an image.
+- `POST /api/integrations/artanis/video` — use chat context to generate a video.
+- `GET /api/integrations/artanis/health` — inspect integration capability/configuration.
+
+Base44 should call these endpoints from a backend function and send `x-artanis-integration-secret`. Do not put the secret in browser code.
+
+Reference assets are accepted by the context layer only when the incoming asset is explicitly marked `consentGranted: true`. This is an integration-level permission signal, not a legal determination; applications should retain their own consent records and allow revocation.
+
+Voice generation is intentionally represented as a future adapter. The current Character Studio integration does not claim voice cloning is implemented.

@@ -20,6 +20,10 @@ export async function GET() {
     comfyui: configured(process.env.COMFYUI_URL) && configured(process.env.COMFYUI_VIDEO_WORKFLOW),
   };
 
+  const audioProviders = {
+    elevenlabs: configured(process.env.ELEVENLABS_API_KEY),
+  };
+
   const cloud = {
     supabase: configured(process.env.NEXT_PUBLIC_SUPABASE_URL) && configured(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY),
   };
@@ -30,6 +34,7 @@ export async function GET() {
       service: "character-studio",
       providers,
       videoProviders,
+      audioProviders,
       cloud,
     },
     {

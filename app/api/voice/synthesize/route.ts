@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireConfiguredAuth } from "@/lib/auth";
 import { synthesizeWithElevenLabs } from "@/lib/providers/elevenlabs";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -9,15 +10,35 @@ const MAX_OUTPUT_BYTES = 32 * 1024 * 1024;
 
 export async function POST(request: Request) {
   try {
-    await requireConfiguredAuth();
+    const userId = await requireConfiguredAuth();
     const body = (await request.json()) as {
       voiceId?: unknown;
+      voiceProfileId?: unknown;
       text?: unknown;
       modelId?: unknown;
       consentGranted?: unknown;
     };
 
-    const voiceId = typeof body.voiceId === "string" ? body.voiceId.trim() : "";
+    const requestedVoiceId = typeof body.voiceId === "string" ? body.voiceId.trim() : "";
+    const voiceProfileId = typeof body.voiceProfileId === "string" ? body.voiceProfileId.trim() : "";
+    let voiceId = requestedVoiceId;
+    if (voiceProfileId) {
+      const supabase = await createSupabaseServerClient();
+      if (!supabase) return NextResponse.json({ error: "Cloud storage is not configured." }, { status: 503 });
+      const { data: profile, error: profileError } = await supabase
+        .from("voice_profiles")
+        .select("provider,provider_voice_id,consent_revoked_at,consent_expires_at")
+        .eq("id", voiceProfileId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
+      if (!profile || profile.provider !== "elevenlabs") return NextResponse.json({ error: "Voice profile not found." }, { status: 404 });
+      if (profile.consent_revoked_at) return NextResponse.json({ error: "Voice consent has been revoked." }, { status: 403 });
+      if (profile.consent_expires_at && Date.parse(profile.consent_expires_at) <= Date.now()) {
+        return NextResponse.json({ error: "Voice consent has expired." }, { status: 403 });
+      }
+      voiceId = profile.provider_voice_id;
+    }
     const text = typeof body.text === "string" ? body.text.trim() : "";
     const consentGranted = body.consentGranted === true;
 

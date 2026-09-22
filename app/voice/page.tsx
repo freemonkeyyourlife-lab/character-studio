@@ -18,7 +18,7 @@ export default function VoiceStudioPage() {
   const [name, setName] = useState("My Voice Clone");
   const [subject, setSubject] = useState("me");
   const [consent, setConsent] = useState(false);
-  const [files, setFiles] = useState<FileList | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [profileId, setProfileId] = useState("");
   const [profiles, setProfiles] = useState<VoiceProfile[]>([]);
   const [characters, setCharacters] = useState<CharacterOption[]>([]);
@@ -45,7 +45,7 @@ export default function VoiceStudioPage() {
   }, []);
 
   async function clone() {
-    if (!files?.length) return setStatus("Bitte mindestens eine Sprachprobe auswählen.");
+    if (!files.length) return setStatus("Bitte mindestens eine Sprachprobe auswählen.");
     setBusy(true);
     setStatus("Stimmprobe wird verarbeitet …");
     try {
@@ -54,7 +54,7 @@ export default function VoiceStudioPage() {
       form.append("consentSubject", subject);
       form.append("consentGranted", String(consent));
       if (characterId) form.append("characterId", characterId);
-      for (const file of Array.from(files)) form.append("files", file);
+      for (const file of files) form.append("files", file);
       const response = await fetch("/api/voice/clone", { method: "POST", body: form });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Klonen fehlgeschlagen.");
@@ -140,7 +140,26 @@ export default function VoiceStudioPage() {
             {characters.map((character) => <option key={character.id} value={character.id}>{character.name || "Unbenannter Charakter"}</option>)}
           </select>
         </label>
-        <label>Sprachproben<input type="file" accept="audio/*" multiple onChange={(e) => setFiles(e.target.files)} /></label>
+        <label>Sprachproben
+          <div
+            className="dropZone"
+            onDragOver={(event) => { event.preventDefault(); event.currentTarget.classList.add("dropZoneActive"); }}
+            onDragLeave={(event) => event.currentTarget.classList.remove("dropZoneActive")}
+            onDrop={(event) => {
+              event.preventDefault();
+              event.currentTarget.classList.remove("dropZoneActive");
+              setFiles(Array.from(event.dataTransfer.files).filter((file) => file.type.startsWith("audio/")).slice(0, 8));
+            }}
+          >
+            <strong>Audio per Drag & Drop</strong>
+            <span>Bis zu 8 Sprachproben · zusammen max. 32 MB</span>
+            <input type="file" accept="audio/*" multiple onChange={(event) => {
+              setFiles(Array.from(event.target.files || []).slice(0, 8));
+              event.currentTarget.value = "";
+            }} />
+          </div>
+        </label>
+        {files.length > 0 && <p className="muted">{files.length} Sprachprobe{files.length === 1 ? "" : "n"} bereit.</p>}
         <label className="checkRow">
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
           Ich bestätige, dass die Stimme mit ausdrücklicher Erlaubnis des Stimmeninhabers verwendet werden darf.

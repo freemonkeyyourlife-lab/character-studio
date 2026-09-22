@@ -826,6 +826,25 @@ export default function Home() {
   );
   const displayReference = character.referenceImage || "";
 
+  const acceptReference = (file: File | null) => {
+    if (!file) return;
+    if (!new Set(["image/png", "image/jpeg", "image/webp"]).has(file.type)) {
+      setError("Only PNG, JPEG and WebP images are supported.");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setError("Image must be 8 MB or smaller.");
+      return;
+    }
+    if (character.referenceImage?.startsWith("blob:")) URL.revokeObjectURL(character.referenceImage);
+    setReference(file);
+    setError("");
+    setSaved(false);
+    setReferencePath("");
+    if (cloudMode && referencePath) setPendingReferenceDeletion({ characterId: character.id, path: referencePath });
+    setCharacter((current) => ({ ...current, referenceImage: URL.createObjectURL(file), referenceImagePath: undefined }));
+  };
+
   return (
     <main className="shell">
       <header className="header">
@@ -891,31 +910,25 @@ export default function Home() {
           <label>Age<input value={character.age} onChange={(e) => update("age", e.target.value)} placeholder="e.g. 28" maxLength={40} /></label>
           <label>Appearance<textarea value={character.appearance} onChange={(e) => update("appearance", e.target.value)} placeholder="Hair, eyes, build, clothing style..." maxLength={4000} /></label>
           <label>Personality<textarea value={character.personality} onChange={(e) => update("personality", e.target.value)} placeholder="Calm, confident, funny..." maxLength={4000} /></label>
-          <label>Reference image<input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => {
-            const file = e.target.files?.[0] || null;
-            if (file) {
-              if (!new Set(["image/png", "image/jpeg", "image/webp"]).has(file.type)) {
-                setError("Only PNG, JPEG and WebP images are supported.");
-                e.currentTarget.value = "";
-                return;
-              }
-              if (file.size > 8 * 1024 * 1024) {
-                setError("Image must be 8 MB or smaller.");
-                e.currentTarget.value = "";
-                return;
-              }
-            }
-            if (character.referenceImage?.startsWith("blob:")) URL.revokeObjectURL(character.referenceImage);
-            setReference(file);
-            setError("");
-            setSaved(false);
-            if (file) {
-              setReferencePath("");
-              if (cloudMode && referencePath) setPendingReferenceDeletion({ characterId: character.id, path: referencePath });
-              setCharacter((current) => ({ ...current, referenceImage: URL.createObjectURL(file), referenceImagePath: undefined }));
-            }
-            e.currentTarget.value = "";
-          }} /></label>
+          <label>Reference image
+            <div
+              className="dropZone"
+              onDragOver={(event) => { event.preventDefault(); event.currentTarget.classList.add("dropZoneActive"); }}
+              onDragLeave={(event) => event.currentTarget.classList.remove("dropZoneActive")}
+              onDrop={(event) => {
+                event.preventDefault();
+                event.currentTarget.classList.remove("dropZoneActive");
+                acceptReference(event.dataTransfer.files?.[0] || null);
+              }}
+            >
+              <strong>Drag & drop an image here</strong>
+              <span>or choose PNG, JPEG or WebP · max 8 MB</span>
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => {
+                acceptReference(event.target.files?.[0] || null);
+                event.currentTarget.value = "";
+              }} />
+            </div>
+          </label>
           {displayReference && (
             <img
               className="referencePreview"

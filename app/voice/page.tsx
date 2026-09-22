@@ -17,7 +17,7 @@ export default function VoiceStudioPage() {
   const [consent, setConsent] = useState(false);
   const [files, setFiles] = useState<FileList | null>(null);
   const [profileId, setProfileId] = useState("");
-  const [profiles, setProfiles] = useState<VoiceProfile[]>([]);
+  const [profiles, setProfiles] = useState<VoiceProfile[]>([]);\n  const [characters, setCharacters] = useState<CharacterOption[]>([]);\n  const [characterId, setCharacterId] = useState("");
   const [text, setText] = useState("Hallo! Dies ist ein Test meiner geklonten Stimme.");
   const [audioUrl, setAudioUrl] = useState("");
   const [busy, setBusy] = useState(false);
@@ -32,7 +32,7 @@ export default function VoiceStudioPage() {
     if (!profileId && next[0]) setProfileId(next[0].id);
   }
 
-  useEffect(() => { void loadProfiles(); }, []);
+  useEffect(() => {\n    void loadProfiles();\n    fetch("/api/characters", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).then((data) => {\n      if (Array.isArray(data?.characters)) setCharacters(data.characters.map((item: CharacterOption) => ({ id: item.id, name: item.name })));\n    }).catch(() => {});\n  }, []);
 
   async function clone() {
     if (!files?.length) return setStatus("Bitte mindestens eine Sprachprobe auswählen.");
@@ -42,7 +42,7 @@ export default function VoiceStudioPage() {
       const form = new FormData();
       form.append("name", name);
       form.append("consentSubject", subject);
-      form.append("consentGranted", String(consent));
+      form.append("consentGranted", String(consent));\n      if (characterId) form.append("characterId", characterId);
       for (const file of Array.from(files)) form.append("files", file);
       const response = await fetch("/api/voice/clone", { method: "POST", body: form });
       const data = await response.json();
@@ -122,7 +122,7 @@ export default function VoiceStudioPage() {
       <section className="panel stack">
         <h2>1. Stimme klonen</h2>
         <label>Bezeichnung<input value={name} onChange={(e) => setName(e.target.value)} maxLength={120} /></label>
-        <label>Stimmeninhaber / Consent-Subjekt<input value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={200} /></label>
+        <label>Stimmeninhaber / Consent-Subjekt<input value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={200} /></label>\n        {characters.length > 0 && <label>Charakter\n          <select value={characterId} onChange={(e) => setCharacterId(e.target.value)}>\n            <option value="">Keinem Charakter zuordnen</option>\n            {characters.map((character) => <option key={character.id} value={character.id}>{character.name || "Unbenannter Charakter"}</option>)}\n          </select>\n        </label>
         <label>Sprachproben<input type="file" accept="audio/*" multiple onChange={(e) => setFiles(e.target.files)} /></label>
         <label className="checkRow">
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
@@ -144,7 +144,7 @@ export default function VoiceStudioPage() {
                 ))}
               </select>
             </label>
-            {selected && <p className="muted">Voice-ID: <code>{selected.provider_voice_id}</code> · Consent: {selected.consent_subject}</p>}
+            {selected && <p className="muted">Voice-ID: <code>{selected.provider_voice_id}</code> · Consent: {selected.consent_subject}{selected.character_id ? ` · Charakter: ${characters.find((item) => item.id === selected.character_id)?.name || "zugeordnet"}` : ""}</p>}
             <button className="secondary" disabled={busy || !selectedActive} onClick={revoke}>Consent widerrufen</button>
           </>
         ) : <p className="muted">Noch kein gespeichertes Voice-Profil.</p>}

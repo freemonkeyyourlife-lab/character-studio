@@ -5,6 +5,7 @@ import { videoProviders } from "@/lib/video";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type CharacterDraft = {
+  id?: string;
   name?: string;
   age?: string;
   appearance?: string;
@@ -24,7 +25,9 @@ export default function VideoStudio() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
   const [providerStatus, setProviderStatus] = useState<Record<string, boolean>>({});
-  const [authEmail, setAuthEmail] = useState("");\n  const [characters, setCharacters] = useState<CharacterDraft[]>([]);\n  const [characterId, setCharacterId] = useState("");
+  const [authEmail, setAuthEmail] = useState("");
+  const [characters, setCharacters] = useState<CharacterDraft[]>([]);
+  const [characterId, setCharacterId] = useState("");
 
   const selectedProvider = videoProviders.find((item) => item.id === provider) || videoProviders[0];
 
@@ -38,7 +41,12 @@ export default function VideoStudio() {
 
     const supabase = createSupabaseBrowserClient();
     if (!supabase) return;
-    supabase.auth.getSession().then(({ data }) => {\n      setAuthEmail(data.session?.user.email || "");\n      if (data.session) fetch("/api/characters", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).then((payload) => {\n        if (Array.isArray(payload?.characters)) { setCharacters(payload.characters); setCharacterId(payload.characters[0]?.id || ""); }\n      }).catch(() => {});\n    });
+    supabase.auth.getSession().then(({ data }) => {
+      setAuthEmail(data.session?.user.email || "");
+      if (data.session) fetch("/api/characters", { cache: "no-store" }).then((r) => r.ok ? r.json() : null).then((payload) => {
+        if (Array.isArray(payload?.characters)) { setCharacters(payload.characters); setCharacterId(payload.characters[0]?.id || ""); }
+      }).catch(() => {});
+    });
   }, []);
 
   useEffect(() => {
@@ -133,7 +141,10 @@ export default function VideoStudio() {
             Prompt
             <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Describe the scene, movement, camera, lighting and style…" maxLength={8000} />
           </label>
-          {availableCharacters.length > 0 && <>\n            <label>Character<select value={selectedCharacter?.id || ""} onChange={(e) => setCharacterId(e.target.value)}>{availableCharacters.map((item, index) => <option key={item.id || index} value={item.id || ""}>{item.name || "Unnamed character"}</option>)}</select></label>\n            <button className="secondary smallButton" type="button" onClick={useCharacter}>Use selected character as prompt</button>\n          </>}
+          {availableCharacters.length > 0 && <>
+            <label>Character<select value={selectedCharacter?.id || ""} onChange={(e) => setCharacterId(e.target.value)}>{availableCharacters.map((item, index) => <option key={item.id || index} value={item.id || ""}>{item.name || "Unnamed character"}</option>)}</select></label>
+            <button className="secondary smallButton" type="button" onClick={useCharacter}>Use selected character as prompt</button>
+          </>}
 
           <div className="providerBox">
             <div><strong>Video provider</strong><span>{selectedProvider.description}</span></div>

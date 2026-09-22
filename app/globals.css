@@ -180,3 +180,25 @@ input:focus, textarea:focus, select:focus { border-color: #7b8494; }
 @media (max-width: 420px) {
   .videoOptions { grid-template-columns: 1fr; }
 }
+
+
+.dropZone {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  min-height: 150px;
+  padding: 20px;
+  border: 1px dashed #aeb5bf;
+  border-radius: 14px;
+  background: #f7f8fa;
+  text-align: center;
+  transition: border-color .15s ease, background .15s ease, transform .15s ease;
+}
+.dropZone strong { font-size: 14px; }
+.dropZone span { color: #8a919d; font-size: 12px; font-weight: 500; }
+.dropZone input { max-width: 320px; background: #fff; }
+.dropZoneActive {
+  border-color: #16181d;
+  background: #eef1f5;
+  transform: translateY(-1px);
+}

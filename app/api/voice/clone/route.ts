@@ -8,7 +8,7 @@ export const maxDuration = 120;
 
 const MAX_TOTAL_BYTES = 32 * 1024 * 1024;
 const MAX_FILES = 8;
-const MAX_NAME = 120;
+const MAX_NAME = 120;\nconst UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export async function POST(request: Request) {
   try {
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const name = String(form.get("name") || "").trim();
     const description = String(form.get("description") || "").trim();
     const consentGranted = String(form.get("consentGranted") || "").toLowerCase() === "true";
-    const consentSubject = String(form.get("consentSubject") || "").trim();
+    const consentSubject = String(form.get("consentSubject") || "").trim();\n    const characterId = String(form.get("characterId") || "").trim();
 
     if (!consentGranted) {
       return NextResponse.json({ error: "Explicit voice-cloning consent is required." }, { status: 400 });
@@ -54,12 +54,12 @@ export async function POST(request: Request) {
     const { data: profile, error: profileError } = await supabase.from("voice_profiles").insert({
       id: crypto.randomUUID(),
       user_id: userId,
-      provider: "elevenlabs",
+      character_id: characterId || null,\n      provider: "elevenlabs",
       provider_voice_id: result.voiceId,
       name,
       consent_subject: consentSubject,
       consent_scopes: ["voice-cloning", "voice-synthesis"],
-    }).select("id,provider_voice_id,name,consent_subject,consent_granted_at,consent_expires_at,consent_revoked_at,consent_scopes").single();
+    }).select("id,character_id,provider_voice_id,name,consent_subject,consent_granted_at,consent_expires_at,consent_revoked_at,consent_scopes").single();
 
     if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 });
 

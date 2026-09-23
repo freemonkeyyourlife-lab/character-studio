@@ -7,7 +7,7 @@ The earlier **34%** overall figure was a planning estimate, not a measured deliv
 | Phase | Next deliverables | Current state |
 | --- | --- | --- |
 | 0. Stabilization | Reproducible CI, production build, deployment verification | Build and chat foundation merged in PR #1; both Vercel checks passed on its PR and merge commit. |
-| 1. Creation | Character Creator, universal drag and drop, provider registry/router and comparison center, image/video/voice editing | Existing character and media foundations; availability endpoint and automatic image routing with at most one fallback. Comparison and broader routing remain open. |
+| 1. Creation | Character Creator, universal drag and drop, provider registry/router and comparison center, image/video/voice editing | Existing character and media foundations; availability endpoint, automatic image routing with at most one fallback, and a manual image-provider comparison page. Quality scoring, cost tracking and broader routing remain open. |
 | 2. Intelligence | Persistent multi-turn chat, layered context, memory, personal AI | Supabase-backed Venice chat merged in PR #1; live database/provider verification and long-term memory remain open. |
 | 3. Story | Topic, story, scenario and scene state, creator hub | Planned. |
 | 4. Agents | Tool calls for chat/media, orchestration, resumable jobs and recovery | Planning endpoint and orchestrator scaffold only. |

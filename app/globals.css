@@ -27,6 +27,8 @@ input:focus, textarea:focus, select:focus { border-color: #7b8494; }
 .providerBox { display: grid; gap: 10px; margin: 6px 0 18px; padding: 14px; border: 1px solid #e1e4e8; border-radius: 13px; }
 .providerBox div { display: flex; justify-content: space-between; gap: 12px; }
 .providerBox span { color: #8a919d; font-size: 12px; }
+.providerResults { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 18px; }
+.providerResults img { display: block; width: 100%; height: auto; border-radius: 12px; }
 .primary, .secondary { width: 100%; border: 0; border-radius: 11px; padding: 13px 16px; font-weight: 800; cursor: pointer; }
 .primary { background: #16181d; color: white; }
 .secondary { background: #e9edf2; color: #16181d; }

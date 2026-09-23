@@ -35,6 +35,7 @@ export default function AgentLab() {
   }, []);
 
   useEffect(() => {
+    setMemories([]);
     if (!characterId) return;
     let active = true;
     void fetch(`/api/agent/memories?characterId=${encodeURIComponent(characterId)}`, { cache: "no-store" })
@@ -72,7 +73,7 @@ export default function AgentLab() {
   }
 
   async function openSession(id: string) {
-    if (busy) return;
+    if (busy || memoryBusy) return;
     setError("");
     if (!id) { setSessionId(""); setMessages([]); setCharacterId(""); setMemories([]); return; }
     setBusy(true);
@@ -82,6 +83,7 @@ export default function AgentLab() {
       if (!response.ok) throw new Error(data.error || "Conversation could not be loaded.");
       setMessages(data.messages || []);
       setSessionId(id);
+      setMemories([]);
       setCharacterId(data.conversation.character_id || "");
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Loading failed."); }
     finally { setBusy(false); }
@@ -112,13 +114,13 @@ export default function AgentLab() {
     <section className="hero"><div><p className="eyebrow">AGENT LAB</p><h1>Multi-Message Chat</h1><p className="muted">Gespräche werden gespeichert. Der Server lädt die letzten Nachrichten für jede neue Antwort.</p></div><a className="secondary smallButton" href="/">Zurück</a></section>
     <section className="panel stack">
       <label>Gespräch
-        <select value={sessionId} disabled={busy} onChange={(event) => void openSession(event.target.value)}>
+        <select value={sessionId} disabled={busy || memoryBusy} onChange={(event) => void openSession(event.target.value)}>
           <option value="">Neues Gespräch</option>
           {sessions.map((session) => <option key={session.id} value={session.id}>{session.title || "Unbenannt"}</option>)}
         </select>
       </label>
       {!sessionId && <label>Charakter (optional)
-        <select value={characterId} disabled={busy} onChange={(event) => { setCharacterId(event.target.value); setMemories([]); }}>
+        <select value={characterId} disabled={busy || memoryBusy} onChange={(event) => { setCharacterId(event.target.value); setMemories([]); }}>
           <option value="">Ohne Charakter</option>
           {characters.map((character) => <option key={character.id} value={character.id}>{character.name || "Unbenannt"}</option>)}
         </select>

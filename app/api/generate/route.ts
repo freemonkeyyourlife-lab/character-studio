@@ -4,6 +4,7 @@ import { editWithHuggingFace, generateWithHuggingFace } from "@/lib/providers/hu
 import { replicateProvider } from "@/lib/providers/replicate";
 import { falProvider } from "@/lib/providers/fal";
 import { comfyuiProvider } from "@/lib/providers/comfyui";
+import { selectAutomaticImageRoutes } from "@/lib/providers/image-router";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -63,6 +64,27 @@ async function edit(provider: string, image: Blob, prompt: string, model?: strin
   throw new Error("Reference editing is not available for this provider.");
 }
 
+async function automaticImage(prompt: string, reference?: Blob) {
+  const routes = selectAutomaticImageRoutes(reference ? "image-edit" : "text-to-image", process.env);
+  if (!routes.length) throw new Response(JSON.stringify({ error: "No image provider is configured for this operation." }), {
+    status: 503, headers: { "Content-Type": "application/json" },
+  });
+  for (const route of routes) {
+    try {
+      const image = await toBlob(reference
+        ? await edit(route.provider, reference, prompt, route.model)
+        : await generate(route.provider, prompt, route.model));
+      if (image.size > MAX_OUTPUT_BYTES) throw new Error("Image provider returned an image larger than 16 MB.");
+      return { image, provider: route.provider, model: route.model };
+    } catch {
+      console.warn("Automatic image provider failed", route.provider);
+    }
+  }
+  throw new Response(JSON.stringify({ error: "Configured image providers could not complete this request." }), {
+    status: 502, headers: { "Content-Type": "application/json" },
+  });
+}
+
 function selectionError(provider: string, model: string | undefined, capability: "text-to-image" | "image-edit") {
   if (!getProvider(provider)) return "Unknown image provider.";
   if (!model) return capability === "image-edit" ? "Model is required for reference editing." : "Model is required.";
@@ -109,15 +131,16 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Reference image must be PNG, JPEG or WebP." }, { status: 400 });
       }
 
-      const selection = selectionError(provider, model, "image-edit");
+      const selection = provider === "auto" ? null : selectionError(provider, model, "image-edit");
       if (selection) return NextResponse.json({ error: selection }, { status: 400 });
 
-      const image = await toBlob(await edit(provider, file, prompt, model));
+      const automatic = provider === "auto" ? await automaticImage(prompt, file) : null;
+      const image = automatic?.image ?? await toBlob(await edit(provider, file, prompt, model));
       const bytes = Buffer.from(await image.arrayBuffer());
       if (bytes.length > MAX_OUTPUT_BYTES) throw new Error("Image provider returned an image larger than 16 MB.");
       return new Response(bytes, {
         status: 200,
-        headers: { "Content-Type": image.type || "image/png", "Cache-Control": "no-store" },
+        headers: { "Content-Type": image.type || "image/png", "Cache-Control": "no-store", "X-Image-Provider": automatic?.provider || provider, "X-Image-Model": automatic?.model || model },
       });
     }
 
@@ -138,15 +161,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Prompt is limited to 4000 characters." }, { status: 400 });
     }
 
-    const selection = selectionError(provider, model, "text-to-image");
+    const selection = provider === "auto" ? null : selectionError(provider, model, "text-to-image");
     if (selection) return NextResponse.json({ error: selection }, { status: 400 });
 
-    const image = await toBlob(await generate(provider, prompt, model));
+    const automatic = provider === "auto" ? await automaticImage(prompt) : null;
+    const image = automatic?.image ?? await toBlob(await generate(provider, prompt, model));
     const bytes = Buffer.from(await image.arrayBuffer());
     if (bytes.length > MAX_OUTPUT_BYTES) throw new Error("Image provider returned an image larger than 16 MB.");
     return new Response(bytes, {
       status: 200,
-      headers: { "Content-Type": image.type || "image/png", "Cache-Control": "no-store" },
+      headers: { "Content-Type": image.type || "image/png", "Cache-Control": "no-store", "X-Image-Provider": automatic?.provider || provider, "X-Image-Model": automatic?.model || model },
     });
   } catch (error) {
     if (error instanceof Response) return error;

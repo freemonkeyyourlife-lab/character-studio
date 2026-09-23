@@ -33,6 +33,7 @@ export default function Home() {
   const [generations, setGenerations] = useState<SavedGeneration[]>([]);
   const [provider, setProvider] = useState(imageProviders[0].id);
   const [model, setModel] = useState(imageProviders[0].models[0]?.id || "");
+  const [resolvedProvider, setResolvedProvider] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [generating, setGenerating] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -147,6 +148,7 @@ export default function Home() {
   const selectedProvider = imageProviders.find((item) => item.id === provider) || imageProviders[0];
 
   useEffect(() => {
+    if (provider === "auto") { if (model) setModel(""); return; }
     const capability = reference ? "image-edit" : "text-to-image";
     const compatible = selectedProvider.models.find((item) => item.capabilities.includes(capability));
     const currentSupportsMode = selectedProvider.models.some(
@@ -154,7 +156,7 @@ export default function Home() {
     );
     if (compatible && !currentSupportsMode) setModel(compatible.id);
     if (!compatible) setModel("");
-  }, [selectedProvider, reference, model]);
+  }, [provider, selectedProvider, reference, model]);
 
   const prompt = useMemo(
     () => [
@@ -463,7 +465,7 @@ export default function Home() {
 
   const generate = async () => {
     if (generating) return;
-    if (!model) {
+    if (provider !== "auto" && !model) {
       setError(reference ? "No reference-edit model is available for this provider." : "No image model is available for this provider.");
       return;
     }
@@ -521,6 +523,7 @@ export default function Home() {
         throw new Error(data?.error || "Generation failed.");
       }
 
+      setResolvedProvider(response.headers.get("X-Image-Provider") || provider);
       const blob = await response.blob();
       if (cloudMode) {
         const generatedFile = new File([blob], `generation-${crypto.randomUUID()}.png`, { type: blob.type || "image/png" });
@@ -955,16 +958,19 @@ export default function Home() {
           )}
 
           <div className="providerBox">
-            <div><strong>Image model</strong><span>{selectedProvider.description}</span></div>
+            <div><strong>Image model</strong><span>{provider === "auto" ? "Automatically try up to two configured providers." : selectedProvider.description}</span></div>
             <select value={provider} onChange={(e) => {
               const next = e.target.value;
               setProvider(next);
+              setResolvedProvider("");
+              if (next === "auto") { setModel(""); return; }
               const nextProvider = imageProviders.find((item) => item.id === next);
               const compatible = nextProvider?.models.find((item) => reference
                 ? item.capabilities.includes("image-edit")
                 : item.capabilities.includes("text-to-image"));
               setModel(compatible?.id || "");
             }}>
+              <option value="auto">Automatic · configured providers</option>
               {imageProviders.map((item) => (
                 <option
                   key={item.id}
@@ -975,7 +981,8 @@ export default function Home() {
                 </option>
               ))}
             </select>
-            <select value={model} onChange={(e) => setModel(e.target.value)} disabled={selectedProvider.models.length === 0}>
+            <select value={model} onChange={(e) => setModel(e.target.value)} disabled={provider === "auto" || selectedProvider.models.length === 0}>
+              {provider === "auto" && <option value="">Automatic model</option>}
               {selectedProvider.models
                 .filter((item) => reference ? item.capabilities.includes("image-edit") : item.capabilities.includes("text-to-image"))
                 .map((item) => (
@@ -998,7 +1005,7 @@ export default function Home() {
           {imageUrl ? <img className="generatedImage" src={imageUrl} alt={character.name || "Generated character"} /> : <div className="avatar"><span>{character.name ? character.name.slice(0, 1).toUpperCase() : "?"}</span></div>}
           <h3>{character.name || "Unnamed character"}</h3>
           <p>{character.appearance || "Your generated image will appear here."}</p>
-          <div className="tags">{character.age && <span>Age {character.age}</span>}<span>{provider.toUpperCase()}</span>{reference && <span>REFERENCE</span>}</div>
+          <div className="tags">{character.age && <span>Age {character.age}</span>}<span>{(resolvedProvider || provider).toUpperCase()}</span>{reference && <span>REFERENCE</span>}</div>
           <div className="promptBox"><small>Generated prompt</small><div>{prompt || "Add appearance and personality details."}</div></div>
           <button className="secondary" onClick={() => void generate()} disabled={generating || !prompt}>{generating ? "Generating image…" : reference ? "Generate from reference" : "Generate image"}</button>
           {error && <div className="error" role="alert">{error}</div>}

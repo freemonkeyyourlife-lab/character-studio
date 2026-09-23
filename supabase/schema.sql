@@ -132,3 +132,40 @@ for delete to authenticated using (auth.uid() = user_id);
 
 create index if not exists voice_profiles_user_id_idx on public.voice_profiles(user_id);
 create index if not exists voice_profiles_character_id_idx on public.voice_profiles(character_id);
+
+-- Multi-turn conversations; the browser never supplies trusted history to the model.
+create table if not exists public.conversations (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  character_id uuid references public.characters(id) on delete set null,
+  title text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.conversation_messages (
+  id uuid primary key default gen_random_uuid(),
+  position bigint generated always as identity,
+  conversation_id uuid not null references public.conversations(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  role text not null check (role in ('user', 'assistant')),
+  content text not null check (length(content) between 1 and 12000),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists conversations_user_updated_idx on public.conversations(user_id, updated_at desc);
+create index if not exists conversation_messages_order_idx on public.conversation_messages(conversation_id, position desc);
+alter table public.conversations enable row level security;
+alter table public.conversation_messages enable row level security;
+
+drop policy if exists "conversations_owner" on public.conversations;
+create policy "conversations_owner" on public.conversations for all to authenticated
+using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+
+drop policy if exists "conversation_messages_owner" on public.conversation_messages;
+create policy "conversation_messages_owner" on public.conversation_messages for all to authenticated
+using (user_id = (select auth.uid()) and exists (
+  select 1 from public.conversations c where c.id = conversation_id and c.user_id = (select auth.uid())
+)) with check (user_id = (select auth.uid()) and exists (
+  select 1 from public.conversations c where c.id = conversation_id and c.user_id = (select auth.uid())
+));

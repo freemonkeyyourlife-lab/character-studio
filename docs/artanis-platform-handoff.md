@@ -7,6 +7,7 @@ Stand: 23. September 2026. Diese Notiz bewahrt die Produktvorgaben für die **sp
 - `markdown (2).md eingefügt`: ausführlicher Plattformauftrag mit 70 Abschnitten und anschließendem Base44-Verlauf. Die ersten 70 Abschnitte sind Anforderungen und Entwurf. Die Antworten von Base44 sind Behauptungen über Implementierung; sie müssen gegen den Export und durch Funktionstests geprüft werden.
 - `Base44 Charakter-Datenmodell und Prompt.docx`: kleiner Entwurf für `Character` mit `id`, `name`, `role`, `level`, `attributes`, `abilities`, `avatar_url` und `bio`. Beispielwerte sind keine bestätigten Produktionsdaten. Beim Import mit dem reicheren Character-Studio-Modell abgleichen.
 - `Kostenlose NSFW-KI-Modelle erstellen.docx`: Gesprächsnotizen mit Ideen zu Figuren, kurzen Story-Etappen und Minispielen. Der Text enthält private und intime Schilderungen über Dritte. Keine Namen, Biografien oder Szenen daraus ungeprüft als Produktdaten übernehmen. Technische Provider-Aussagen daraus sind unbestätigte Vorschläge.
+- [Geteilter Chat „ARTANISxTRAINIA“](https://chatgpt.com/share/6ab3e882-b43c-83eb-af5d-ec04601b6663): ergänzender Base44-Verlauf mit den Schritten A40/A41. Aussagen des früheren Assistenten über angelegte Modelle und Berechtigungen sind ohne Export und Live-Test noch nicht verifiziert.
 
 ## Produktkern aus dem Plattformauftrag
 
@@ -20,6 +21,8 @@ Stand: 23. September 2026. Diese Notiz bewahrt die Produktvorgaben für die **sp
 - Privatheit: private Originaldateien, kontrollierte temporäre Medienzugriffe, keine öffentlichen bürgerlichen Daten, keine EXIF-/GPS- oder internen Speicherpfade. Nutzung realer Personen und ihrer Bildreferenzen nur nach gesicherter Einwilligung. Separate Prüfung für Altersnachweis, Darstellerfreigabe, Rechte, Rollen und Medienzugriff.
 
 ## Übernahme in die Roadmap
+
+Der geteilte Chat identifiziert die **bestehende** Base44-App als `ARTANIS × TRIANIA`, App-ID `6aaaf0f2a95eaf5ac21b377f`, mit der URL `https://artanis-triania-live.base44.app/`. A40 nennt 14 angeblich angelegte Modelle: `UserMemory`, `ConversationInsight`, `Offer`, `UserReputation`, `CoinWallet`, `CoinLedger`, `IdeaSignal`, `Notification`, `InviteLink`, `ChannelPreference`, `ToyDevice`, `ToySession`, `ToyAction` und `Session`. Der Verlauf behauptet Besitzerzugriff auf Memory-, Wallet-, Toy- und Session-Daten und Admin-Zugriff auf interne Daten. A41 ist ein anschließender **Auftrag** zur Verbindung von `Conversation`, `Message`, `BotPersona` und Creator-Daten mit `UserMemory`, `Session` und `ConversationInsight`; die Antwort kündigt dies nur an. Ebenfalls ausdrücklich korrigiert werden soll Trianias falsche Altersangabe von 32 auf **29**. Diese Angaben in die Exportprüfung aufnehmen, keine erfolgreiche A41-Umsetzung unterstellen.
 
 1. Den angekündigten Base44-Export und Screenshots inventarisieren: Routen, Datenmodelle, Assets, echte Interaktionen, externe Verbindungen, Konfiguration und bekannte Fehler. Keine Base44-Erfolgsmeldung ohne Test übernehmen.
 2. Widersprüche und Lücken mit dem Nutzer klären: insbesondere Alter/Profilangaben, Rechte an Referenzbildern, erste tatsächlich benötigte Funktionen, Videochat- und Zahlungsanbieter. Keine privaten Drittpersonen aus Gesprächsnotizen automatisch importieren.

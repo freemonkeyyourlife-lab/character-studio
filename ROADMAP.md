@@ -1,0 +1,26 @@
+# Character Studio / AI Creation Engine
+
+This is the implementation tracker for the standalone engine. Artanis × Triania is a later, separate product integration. Slack is out of scope for now.
+
+The earlier **34%** overall figure was a planning estimate, not a measured delivery metric. Update it only after working functionality and production checks justify a change.
+
+| Phase | Next deliverables | Current state |
+| --- | --- | --- |
+| 0. Stabilization | Reproducible CI, production build, deployment verification | CI passed on the draft PR with context-window tests. Verify both Vercel checks for the latest head; `main` has not received the fix. |
+| 1. Creation | Character Creator, universal drag and drop, provider registry/router and comparison center, image/video/voice editing | Existing character and media foundations; routing and comparison remain incomplete. |
+| 2. Intelligence | Persistent multi-turn chat, layered context, memory, personal AI | A Supabase-backed Venice chat path is in the draft PR; live database/provider verification and long-term memory remain open. |
+| 3. Story | Topic, story, scenario and scene state, creator hub | Planned. |
+| 4. Agents | Tool calls for chat/media, orchestration, resumable jobs and recovery | Planning endpoint and orchestrator scaffold only. |
+| 5. Production | Consent, access control, data/media backup and restore, monitoring, cost controls, browser and end-to-end tests | Partial foundations; production review pending. |
+
+## Current integration gate
+
+1. Review the draft PR and merge its verified build fix when approved.
+2. Apply the updated `supabase/schema.sql` to the intended Supabase project.
+3. Configure server-only `VENICE_API_KEY` and an available `VENICE_CHAT_MODEL` in the intended deployment.
+4. Test a signed-in two-turn conversation, reload it, verify character context and owner isolation, then inspect provider errors and usage.
+5. Continue with memory and story state only after the actual chat round trip works.
+
+## Provider references
+
+Venice, SeaArt, NovelAI, FlowGPT, Civitai, Hugging Face, Replicate, fal, ComfyUI and ElevenLabs were discussed as providers or product/architecture references. Inclusion in a discussion does not imply that an external API is available or integrated. Verify official API access, terms, capabilities and actual account configuration before listing any adapter as live. User-provided platform exports and screenshots will refine the product behavior later.

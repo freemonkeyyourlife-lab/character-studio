@@ -139,7 +139,7 @@ export default function VoiceStudioPage() {
             <option value="">Keinem Charakter zuordnen</option>
             {characters.map((character) => <option key={character.id} value={character.id}>{character.name || "Unbenannter Charakter"}</option>)}
           </select>
-        </label>
+        </label>}
         <label>Sprachproben
           <div
             className="dropZone"

@@ -169,3 +169,43 @@ using (user_id = (select auth.uid()) and exists (
 )) with check (user_id = (select auth.uid()) and exists (
   select 1 from public.conversations c where c.id = conversation_id and c.user_id = (select auth.uid())
 ));
+
+-- Commit a whole turn atomically. A stale client must not append an answer
+-- generated without seeing a newer turn from another tab.
+create or replace function public.append_conversation_turn(
+  p_conversation_id uuid, p_character_id uuid, p_title text,
+  p_user_message text, p_assistant_message text, p_expected_position bigint
+) returns uuid language plpgsql security invoker set search_path = '' as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_conversation_id uuid := p_conversation_id;
+  v_last_position bigint;
+begin
+  if v_user_id is null then raise exception 'Authentication required' using errcode = '42501'; end if;
+  if length(p_user_message) not between 1 and 4000 or length(p_assistant_message) not between 1 and 12000 then
+    raise exception 'Invalid message length' using errcode = '22023';
+  end if;
+  if v_conversation_id is null then
+    if p_character_id is not null and not exists (
+      select 1 from public.characters where id = p_character_id and user_id = v_user_id
+    ) then raise exception 'Character not found' using errcode = '22023'; end if;
+    insert into public.conversations(user_id, character_id, title)
+    values (v_user_id, p_character_id, left(p_title, 100)) returning id into v_conversation_id;
+  else
+    perform 1 from public.conversations where id = v_conversation_id and user_id = v_user_id for update;
+    if not found then raise exception 'Conversation not found' using errcode = '22023'; end if;
+    select max(position) into v_last_position from public.conversation_messages
+    where conversation_id = v_conversation_id and user_id = v_user_id;
+    if v_last_position is distinct from p_expected_position then
+      raise exception 'Conversation changed; reload and retry' using errcode = 'P0001';
+    end if;
+  end if;
+  insert into public.conversation_messages(conversation_id, user_id, role, content)
+  values (v_conversation_id, v_user_id, 'user', p_user_message),
+         (v_conversation_id, v_user_id, 'assistant', p_assistant_message);
+  update public.conversations set updated_at = now() where id = v_conversation_id and user_id = v_user_id;
+  return v_conversation_id;
+end;
+$$;
+revoke all on function public.append_conversation_turn(uuid,uuid,text,text,text,bigint) from public, anon;
+grant execute on function public.append_conversation_turn(uuid,uuid,text,text,text,bigint) to authenticated;

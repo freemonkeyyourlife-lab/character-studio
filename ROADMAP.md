@@ -16,7 +16,7 @@ The earlier **34%** overall figure was a planning estimate, not a measured deliv
 ## Current integration gate
 
 1. Review the draft PR and merge its verified build fix when approved.
-2. Apply the updated `supabase/schema.sql` to the intended Supabase project.
+2. Apply the updated `supabase/schema.sql` to the intended Supabase project (including the atomic chat-turn function).
 3. Configure server-only `VENICE_API_KEY` and an available `VENICE_CHAT_MODEL` in the intended deployment.
 4. Test a signed-in two-turn conversation, reload it, verify character context and owner isolation, then inspect provider errors and usage.
 5. Continue with memory and story state only after the actual chat round trip works.

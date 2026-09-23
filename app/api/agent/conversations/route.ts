@@ -77,7 +77,7 @@ export async function POST(request: Request) {
     if (data) persona = `Character: ${data.name}\nPersonality: ${data.personality}\nAppearance: ${data.appearance}`;
   }
   const { data: recent, error: historyError } = id
-    ? await db.from("conversation_messages").select("role,content")
+    ? await db.from("conversation_messages").select("role,content,position")
       .eq("conversation_id", id).eq("user_id", userId).order("position", { ascending: false }).limit(40)
     : { data: [], error: null };
   if (historyError) return NextResponse.json({ error: "Could not load history." }, { status: 500 });
@@ -93,18 +93,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Chat failed." }, { status: 502 });
   }
 
-  if (!id) {
-    const { data, error } = await db.from("conversations")
-      .insert({ user_id: userId, character_id: activeCharacterId, title: message.trim().slice(0, 100) })
-      .select("id").single();
-    if (error || !data) return NextResponse.json({ error: "Could not save conversation." }, { status: 500 });
-    id = data.id;
-  }
-  const { error: saveError } = await db.from("conversation_messages").insert([
-    { conversation_id: id, user_id: userId, role: "user", content: message.trim() },
-    { conversation_id: id, user_id: userId, role: "assistant", content: answer },
-  ]);
-  if (saveError) return NextResponse.json({ error: "Could not save messages." }, { status: 500 });
-  await db.from("conversations").update({ updated_at: new Date().toISOString() }).eq("id", id).eq("user_id", userId);
-  return NextResponse.json({ conversationId: id, answer }, { headers: { "Cache-Control": "no-store" } });
+  const { data: savedId, error: saveError } = await db.rpc("append_conversation_turn", {
+    p_conversation_id: id ?? null,
+    p_character_id: activeCharacterId,
+    p_title: message.trim().slice(0, 100),
+    p_user_message: message.trim(),
+    p_assistant_message: answer,
+    p_expected_position: recent?.[0]?.position ?? null,
+  });
+  if (saveError) return NextResponse.json({ error: saveError.code === "P0001"
+    ? "This conversation changed in another tab. Reload it and send again."
+    : "Could not save conversation. Check that the latest Supabase schema is applied." }, { status: saveError.code === "P0001" ? 409 : 500 });
+  return NextResponse.json({ conversationId: savedId, answer }, { headers: { "Cache-Control": "no-store" } });
 }

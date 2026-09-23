@@ -3,6 +3,9 @@
 1. Create a Supabase project.
 2. Enable email/password authentication.
 3. Run `schema.sql` in the Supabase SQL Editor.
+   Re-run it after updating an existing installation: the conversation tables and
+   `append_conversation_turn` function are required for Agent Lab. The function
+   commits a user/assistant turn in one transaction and rejects stale concurrent turns.
 4. Copy the project URL and publishable key into `.env.local`:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`

@@ -75,6 +75,8 @@ npm run build
 
 The SQL schema now includes a private `voice_profiles` table. Apply the current `supabase/schema.sql` in the Supabase SQL editor when enabling cloud voice profiles. The table stores the provider voice ID and consent metadata, not the original audio samples. Voice profiles are protected by owner-only RLS policies.
 
+The Agent Lab multi-message chat requires an authenticated Supabase session, the latest `supabase/schema.sql` (including `conversations` and `conversation_messages`), and server-only `VENICE_API_KEY` plus `VENICE_CHAT_MODEL` environment variables. Set the model to a text chat model available in your Venice account. Messages are stored under owner-only RLS; the server loads the last 40 messages for the next turn. Long-term memory, story state, autonomous tools, and provider fallback are separate future steps. Without those settings, the chat endpoint reports its missing configuration instead of simulating an answer.
+
 ## Supabase
 
 1. Create a Supabase project.

@@ -158,6 +158,11 @@ create index if not exists conversation_messages_order_idx on public.conversatio
 alter table public.conversations enable row level security;
 alter table public.conversation_messages enable row level security;
 
+-- New Supabase projects do not automatically expose public tables to the Data API.
+-- RLS still limits every row to its owner after these grants.
+grant select, insert, update, delete on public.conversations to authenticated;
+grant select, insert, update, delete on public.conversation_messages to authenticated;
+
 drop policy if exists "conversations_owner" on public.conversations;
 create policy "conversations_owner" on public.conversations for all to authenticated
 using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
@@ -209,3 +214,24 @@ end;
 $$;
 revoke all on function public.append_conversation_turn(uuid,uuid,text,text,text,bigint) from public, anon;
 grant execute on function public.append_conversation_turn(uuid,uuid,text,text,text,bigint) to authenticated;
+
+-- Owner-managed facts for one character. Memories are never shared between users.
+create table if not exists public.character_memories (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  character_id uuid not null references public.characters(id) on delete cascade,
+  content text not null check (length(content) between 1 and 1000),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists character_memories_owner_recent_idx
+on public.character_memories(user_id, character_id, updated_at desc);
+alter table public.character_memories enable row level security;
+grant select, insert, update, delete on public.character_memories to authenticated;
+drop policy if exists "character_memories_owner" on public.character_memories;
+create policy "character_memories_owner" on public.character_memories for all to authenticated
+using (user_id = (select auth.uid()) and exists (
+  select 1 from public.characters c where c.id = character_id and c.user_id = (select auth.uid())
+)) with check (user_id = (select auth.uid()) and exists (
+  select 1 from public.characters c where c.id = character_id and c.user_id = (select auth.uid())
+));

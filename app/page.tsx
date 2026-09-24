@@ -53,6 +53,7 @@ export default function Home() {
   const [importingCharacter, setImportingCharacter] = useState(false);
   const [downloadingGeneration, setDownloadingGeneration] = useState("");
   const [savingCharacter, setSavingCharacter] = useState(false);
+  const [framing, setFraming] = useState<"full-body" | "portrait">("full-body");
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -160,12 +161,14 @@ export default function Home() {
 
   const prompt = useMemo(
     () => [
-      "photorealistic portrait",
+      framing === "full-body"
+        ? "photorealistic full-body character photograph, wide enough to show the entire person from head to toe, feet and shoes visible, complete anatomically coherent figure, detailed finished rendering, subject fully inside the frame, camera positioned far enough away, no cropped limbs, no close-up, no sketch, no unfinished areas"
+        : "photorealistic finished character portrait, detailed face and clothing, no sketch, no unfinished areas",
       character.appearance,
       character.age ? `age ${character.age}` : "",
       character.personality,
     ].filter(Boolean).join(", "),
-    [character]
+    [character, framing]
   );
 
   const update = (key: keyof Character, value: string) => {
@@ -1007,6 +1010,12 @@ export default function Home() {
           <h3>{character.name || "Unnamed character"}</h3>
           <p>{character.appearance || "Your generated image will appear here."}</p>
           <div className="tags">{character.age && <span>Age {character.age}</span>}<span>{(resolvedProvider || provider).toUpperCase()}</span>{reference && <span>REFERENCE</span>}</div>
+          <label>Image framing
+            <select value={framing} onChange={(event) => setFraming(event.target.value as "full-body" | "portrait")} disabled={generating}>
+              <option value="full-body">Full body · head to toe</option>
+              <option value="portrait">Portrait · face and upper body</option>
+            </select>
+          </label>
           <div className="promptBox"><small>Generated prompt</small><div>{prompt || "Add appearance and personality details."}</div></div>
           <button className="secondary" onClick={() => void generate()} disabled={generating || !prompt}>{generating ? "Generating image…" : reference ? "Generate from reference" : "Generate image"}</button>
           {error && <div className="error" role="alert">{error}</div>}

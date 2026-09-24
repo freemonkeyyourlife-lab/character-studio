@@ -23,13 +23,14 @@ async function outputToBlob(output: unknown): Promise<Blob> {
 export const replicateProvider: ImageProviderAdapter = {
   async generate({ prompt, model }: ImageGenerationInput) {
     const selected = (model || process.env.REPLICATE_IMAGE_MODEL || "black-forest-labs/flux-schnell") as ReplicateModel;
-    const output = await client().run(selected, { input: { prompt } });
+    const input = selected === "black-forest-labs/flux-schnell" ? { prompt, aspect_ratio: "2:3" } : { prompt };
+    const output = await client().run(selected, { input });
     return outputToBlob(output);
   },
   async edit({ prompt, model, image }: ImageEditInput) {
     const selected = (model || process.env.REPLICATE_EDIT_MODEL || "black-forest-labs/flux-redux-schnell") as ReplicateModel;
     const input = selected === "black-forest-labs/flux-redux-schnell"
-      ? { redux_image: image, aspect_ratio: "1:1", num_outputs: 1, output_format: "webp", output_quality: 80, num_inference_steps: 4 }
+      ? { redux_image: image, aspect_ratio: "2:3", num_outputs: 1, output_format: "webp", output_quality: 80, num_inference_steps: 4 }
       : { prompt, image };
     const output = await client().run(selected, { input });
     return outputToBlob(output);

@@ -40,7 +40,7 @@ input:focus, textarea:focus, select:focus { border-color: #7b8494; }
 .previewTop span { color: #8a919d; font-size: 12px; }
 .avatar { min-height: 360px; margin: 0 0 18px; display: grid; place-items: center; border-radius: 15px; background: #eef1f5; }
 .avatar span { width: 92px; height: 92px; display: grid; place-items: center; border-radius: 50%; background: #fff; font-size: 34px; font-weight: 800; color: #737b88; }
-.generatedImage { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 15px; display: block; margin-bottom: 18px; }
+.generatedImage { width: 100%; height: auto; max-height: 760px; object-fit: contain; border-radius: 15px; display: block; margin-bottom: 18px; background: #eef1f5; }
 .preview h3 { margin: 0 0 6px; font-size: 22px; }
 .preview p { margin: 0 0 14px; color: #667085; }
 .tags { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -62,7 +62,7 @@ input:focus, textarea:focus, select:focus { border-color: #7b8494; }
 .vaultGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
 .vaultItem { display: grid; gap: 7px; text-align: left; border: 1px solid #e1e4e8; background: #fff; padding: 8px; border-radius: 12px; cursor: pointer; }
 .vaultItem:hover { border-color: #aeb5bf; }
-.vaultItem img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; }
+.vaultItem img { width: 100%; aspect-ratio: 3 / 4; object-fit: contain; border-radius: 8px; background: #eef1f5; }
 .vaultItem strong { padding: 0 3px; font-size: 13px; }
 .vaultItem span { padding: 0 3px; color: #8a919d; font-size: 10px; }
 @media (max-width: 760px) {

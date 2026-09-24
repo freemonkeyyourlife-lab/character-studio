@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 type Model = { id: string; name: string; capabilities: string[] };
 type Provider = { id: string; name: string; configured: boolean; models: Model[] };
-type Result = { id: string; name: string; model: string; seconds: number; imageUrl?: string; error?: string };
+type Result = { id: string; name: string; model: string; seconds: number; imageUrl?: string; error?: string; rating?: number };
 
 export default function ProviderTestCenter() {
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -34,6 +34,9 @@ export default function ProviderTestCenter() {
   const capability = reference ? "image-edit" : "text-to-image";
   const eligible = providers.filter((provider) => provider.configured && provider.models.some((model) => model.capabilities.includes(capability)));
   const chosen = eligible.filter((provider) => selected.includes(provider.id));
+  const rated = results.filter((result) => result.imageUrl && result.rating);
+  const topRating = Math.max(0, ...rated.map((result) => result.rating || 0));
+  const favorites = rated.filter((result) => result.rating === topRating);
 
   async function compare() {
     if (busy || !prompt.trim() || !chosen.length) return;
@@ -114,9 +117,21 @@ export default function ProviderTestCenter() {
       {error && <p role="alert">{error}</p>}
     </section>
     {results.length > 0 && <section className="providerResults" aria-label="Vergleichsergebnisse">
+      <div className="panel">
+        <h2>Deine Bewertung</h2>
+        <p className="muted">Bewerte die Bildqualität mit 1 bis 5. Die Bewertung bleibt nur während dieser Sitzung erhalten.</p>
+        {favorites.length > 0 && <p>Am besten bewertet: {favorites.map((result) => result.name).join(", ")} ({topRating}/5)</p>}
+      </div>
       {results.map((result) => <article className="panel" key={result.id}>
         <h2>{result.name}</h2><p className="muted">{result.model} · {result.seconds} s</p>
         {result.imageUrl && <img src={result.imageUrl} alt={`Ergebnis von ${result.name}`} />}
+        {result.imageUrl && <label>Bildqualität für {result.name}
+          <select value={result.rating || ""} onChange={(event) => setResults((current) => current.map((item) =>
+            item.id === result.id ? { ...item, rating: event.target.value ? Number(event.target.value) : undefined } : item))}>
+            <option value="">Noch nicht bewertet</option>
+            {[1, 2, 3, 4, 5].map((score) => <option key={score} value={score}>{score} von 5</option>)}
+          </select>
+        </label>}
         {result.error && <p role="alert">{result.error}</p>}
       </article>)}
     </section>}

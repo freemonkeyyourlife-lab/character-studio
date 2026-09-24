@@ -13,7 +13,7 @@ type CharacterDraft = {
 };
 
 export default function VideoStudio() {
-  const [provider, setProvider] = useState(videoProviders[0].id);
+  const [provider, setProvider] = useState("auto");
   const [model, setModel] = useState(videoProviders[0].models[0]?.id || "");
   const [prompt, setPrompt] = useState("");
   const [duration, setDuration] = useState("");
@@ -22,6 +22,7 @@ export default function VideoStudio() {
   const [fps, setFps] = useState("24");
   const [videoUrl, setVideoUrl] = useState("");
   const [videoType, setVideoType] = useState("video/mp4");
+  const [usedProvider, setUsedProvider] = useState("");
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
   const [providerStatus, setProviderStatus] = useState<Record<string, boolean>>({});
@@ -55,7 +56,7 @@ export default function VideoStudio() {
     }
   }, [selectedProvider, model]);
 
-  const providerReady = providerStatus[provider] !== false;
+  const providerReady = provider === "auto" ? Object.values(providerStatus).some(Boolean) : providerStatus[provider] === true;
   const hasPrompt = prompt.trim().length > 0;
 
   const localCharacters = useMemo(() => {
@@ -104,6 +105,7 @@ export default function VideoStudio() {
       const blob = await response.blob();
       if (!blob.type.startsWith("video/")) throw new Error("The provider returned a non-video file.");
       setVideoType(blob.type);
+      setUsedProvider(response.headers.get("X-Video-Provider") || provider);
       setVideoUrl(URL.createObjectURL(blob));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Video generation failed.");
@@ -147,22 +149,23 @@ export default function VideoStudio() {
           </>}
 
           <div className="providerBox">
-            <div><strong>Video provider</strong><span>{selectedProvider.description}</span></div>
+            <div><strong>Video provider</strong><span>{provider === "auto" ? "Uses an available configured video model; tries one fallback if the first fails. Each attempt can incur provider charges." : selectedProvider.description}</span></div>
             <select value={provider} onChange={(e) => {
               const next = e.target.value;
               setProvider(next);
               const nextProvider = videoProviders.find((item) => item.id === next);
               setModel(nextProvider?.models[0]?.id || "");
             }}>
+              <option value="auto">Automatic · up to two providers</option>
               {videoProviders.map((item) => (
                 <option key={item.id} value={item.id} disabled={item.status !== "ready" || providerStatus[item.id] === false}>
                   {item.name}{providerStatus[item.id] === false ? " · not configured" : ""}
                 </option>
               ))}
             </select>
-            <select value={model} onChange={(e) => setModel(e.target.value)}>
+            {provider !== "auto" && <select value={model} onChange={(e) => setModel(e.target.value)}>
               {selectedProvider.models.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-            </select>
+            </select>}
           </div>
 
           <div className="videoOptions">
@@ -180,7 +183,7 @@ export default function VideoStudio() {
         </div>
 
         <div className="card preview videoPreview">
-          <div className="previewTop"><h2>Preview</h2><span>{generating ? "Generating…" : videoUrl ? videoType : "Ready"}</span></div>
+          <div className="previewTop"><h2>Preview</h2><span>{generating ? "Generating…" : videoUrl ? `${videoType} · ${usedProvider}` : "Ready"}</span></div>
           {videoUrl ? (
             <>
               <video className="generatedVideo" src={videoUrl} controls playsInline loop />

@@ -3,6 +3,7 @@ import { getVideoProvider } from "@/lib/video";
 import { replicateVideoProvider } from "@/lib/providers/replicate-video";
 import { falVideoProvider } from "@/lib/providers/fal-video";
 import { comfyuiVideoProvider } from "@/lib/providers/comfyui-video";
+import { selectAutomaticVideoRoutes } from "@/lib/providers/video-router";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -65,14 +66,30 @@ export async function POST(request: Request) {
 
     if (!prompt) return NextResponse.json({ error: "Prompt is required." }, { status: 400 });
     if (prompt.length > 8000) return NextResponse.json({ error: "Prompt is limited to 8000 characters." }, { status: 400 });
-    if (!provider || !getVideoProvider(provider)) return NextResponse.json({ error: "Unknown video provider." }, { status: 400 });
+    if (provider !== "auto" && (!provider || !getVideoProvider(provider))) return NextResponse.json({ error: "Unknown video provider." }, { status: 400 });
 
     const duration = optionalNumber(body.duration, 1, 3600);
     const width = optionalNumber(body.width, 256, 4096);
     const height = optionalNumber(body.height, 256, 4096);
     const fps = optionalNumber(body.fps, 1, 120);
 
-    const video = await adapter(provider).generate({ prompt, model: model || undefined, duration, width, height, fps });
+    const routes = provider === "auto"
+      ? selectAutomaticVideoRoutes(process.env)
+      : [{ provider, model: model || "configured" }];
+    if (!routes.length) return NextResponse.json({ error: "No video provider is configured." }, { status: 503 });
+    let video: Blob | undefined;
+    let usedProvider = "";
+    const failures: string[] = [];
+    for (const route of routes) {
+      try {
+        video = await adapter(route.provider).generate({ prompt, model: route.model, duration, width, height, fps });
+        usedProvider = route.provider;
+        break;
+      } catch (error) {
+        failures.push(`${route.provider}: ${error instanceof Error ? error.message : "generation failed"}`);
+      }
+    }
+    if (!video) return NextResponse.json({ error: failures.join("; ") }, { status: 502 });
     const bytes = Buffer.from(await video.arrayBuffer());
     if (bytes.length > MAX_OUTPUT_BYTES) throw new Error("Video provider returned a video larger than 128 MB.");
 
@@ -81,6 +98,7 @@ export async function POST(request: Request) {
       headers: {
         "Content-Type": video.type || "video/mp4",
         "Cache-Control": "no-store",
+        "X-Video-Provider": usedProvider,
       },
     });
   } catch (error) {

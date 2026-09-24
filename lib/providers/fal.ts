@@ -12,7 +12,10 @@ export const falProvider: ImageProviderAdapter = {
   async generate({ prompt, model }) {
     configure();
     const endpoint = model || process.env.FAL_IMAGE_MODEL || "fal-ai/flux/schnell";
-    const result = await fal.subscribe(endpoint, { input: { prompt } });
+    const input = endpoint === "fal-ai/flux/schnell"
+      ? { prompt, image_size: "portrait_16_9" }
+      : { prompt };
+    const result = await fal.subscribe(endpoint, { input });
     const image = result.data?.images?.[0];
     if (!image?.url) throw new Error("fal did not return an image.");
     return fetchImageBlob(image.url, "fal");
